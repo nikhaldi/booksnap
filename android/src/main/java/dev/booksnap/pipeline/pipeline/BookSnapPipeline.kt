@@ -389,9 +389,14 @@ class BookSnapPipeline(
         // Convert RGBA to BGR for bilateral filter
         val bgr = Mat()
         Imgproc.cvtColor(mat, bgr, Imgproc.COLOR_RGBA2BGR)
+        // Contrast stretching: normalize each channel to use full dynamic range
+        val normalized = Mat()
+        Core.normalize(bgr, normalized, 0.0, 255.0, Core.NORM_MINMAX)
+        bgr.release()
         val filtered = Mat()
         // Bilateral filter: preserves edges while smoothing noise
-        Imgproc.bilateralFilter(bgr, filtered, 11, 100.0, 100.0)
+        Imgproc.bilateralFilter(normalized, filtered, 11, 100.0, 100.0)
+        normalized.release()
         // Apply mild unsharp mask to enhance text edges after smoothing
         val blurred = Mat()
         Imgproc.GaussianBlur(filtered, blurred, Size(0.0, 0.0), 3.0)
@@ -405,7 +410,6 @@ class BookSnapPipeline(
         val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(rgba, result)
         mat.release()
-        bgr.release()
         sharpened.release()
         rgba.release()
         return result
