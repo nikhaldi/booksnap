@@ -367,7 +367,7 @@ class BookSnapPipeline(
         Imgproc.cvtColor(mat, bgr, Imgproc.COLOR_RGBA2BGR)
         val filtered = Mat()
         // Bilateral filter: preserves edges while smoothing noise
-        Imgproc.bilateralFilter(bgr, filtered, 9, 75.0, 75.0)
+        Imgproc.bilateralFilter(bgr, filtered, 11, 100.0, 100.0)
         // Convert back to RGBA
         val rgba = Mat()
         Imgproc.cvtColor(filtered, rgba, Imgproc.COLOR_BGR2RGBA)

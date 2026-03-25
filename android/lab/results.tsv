@@ -39,3 +39,5 @@ exp_038	2026-03-25T13:16:29.835533+00:00	0.046760	{}	no	reverted	Background norm
 exp_039	2026-03-25T13:19:21.706509+00:00	0.051030	{}	no	reverted	fastNlMeansDenoisingColored was way too slow (2976ms) and worse results. Reverted to bilateral filter.
 exp_040	2026-03-25T13:21:26.526219+00:00	0.045930	{}	no	reverted	Short-line paragraph break minimum length threshold didn't help. The change helped some samples but hurt others. Reverted.
 exp_041	2026-03-25T13:25:55.333607+00:00	0.044820	{}	yes	e8eee1c49ed97886a4538452d9fc2eef14af46a3	Dual OCR: original image for page numbers, denoised image for text. Recovers page accuracy (58.8% -> 67.6%) while keeping denoised CER benefit. Score 0.04585 -> 0.04482.
+exp_042	2026-03-25T13:28:01.196905+00:00	0.045410	{}	no	reverted	OCR digit correction for page numbers was too aggressive, causing false matches. Reverted.
+exp_043	2026-03-25T13:28:57.662828+00:00	0.044040	{}	yes	cadcfc4b071d97b4ade0df069567a0af2b22cf49	Stronger bilateral filter (d=11, sigma=100). CER 0.039 -> 0.038. Score 0.04482 -> 0.04404. Latency 462ms.
