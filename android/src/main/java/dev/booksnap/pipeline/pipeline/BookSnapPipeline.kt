@@ -39,11 +39,11 @@ class BookSnapPipeline(
         val blocks = engine.recognize(bitmap)
         if (blocks.isEmpty()) return PageResult(text = "")
 
+        // Extract page number from ALL blocks before any filtering
+        val pageNumberResult = extractPageNumber(blocks, bitmap.height)
+
         // Filter out facing-page text by keeping only blocks from the dominant side
         val filtered = filterFacingPage(blocks, bitmap.width)
-
-        // Extract page number from blocks near top or bottom margins
-        val pageNumberResult = extractPageNumber(filtered, bitmap.height)
 
         // Remove page number block from text blocks
         val textBlocks = if (pageNumberResult != null) {
@@ -61,11 +61,22 @@ class BookSnapPipeline(
         // Sort by Y position for correct reading order
         val sortedLines = filteredLines.sortedBy { it.boundingBox.top }
 
-        val rawText = sortedLines.joinToString("\n") { it.text }
+        // Remove any remaining page number text from lines
+        val pageNum = pageNumberResult?.second
+        val cleanedLines = if (pageNum != null) {
+            sortedLines.filter { line ->
+                val trimmed = line.text.trim()
+                trimmed != pageNum.toString()
+            }
+        } else {
+            sortedLines
+        }
+
+        val rawText = cleanedLines.joinToString("\n") { it.text }
         val text = rejoinHyphenatedWords(rawText)
         return PageResult(
             text = text,
-            pageNumber = pageNumberResult?.second
+            pageNumber = pageNum
         )
     }
 
