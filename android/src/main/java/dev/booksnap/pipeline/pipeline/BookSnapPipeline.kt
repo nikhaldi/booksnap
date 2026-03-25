@@ -362,6 +362,8 @@ class BookSnapPipeline(
         result = result.replace(Regex("»[>»]+"), "»")
         // Remove pipe characters (OCR noise, never appears in book text)
         result = result.replace("|", "")
+        // Fix German OCR: 'fß' is commonly misread for 'ß' (e.g. dafß -> daß)
+        result = result.replace("fß", "ß")
         return result
     }
 

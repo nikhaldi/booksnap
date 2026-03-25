@@ -82,3 +82,4 @@ exp_081	2026-03-25T19:33:57.578876+00:00	0.037381	{}	no	reverted	Lowercased dict
 exp_082	2026-03-25T19:34:53.861319+00:00	0.035972	{}	yes	caa129561268167f088a1a2103dd8e05948cf1ab	Fix OCR reading guillemets as angle brackets: < before uppercase -> «, trailing > -> ». Also remove duplicate » artifacts. CER 0.03327 -> 0.03310.
 exp_083	2026-03-25T19:39:46.016826+00:00	0.035927	{}	yes	d955fc7862ff8a4b4ee7f1fc81aa1804a4c2ba7e	Remove pipe characters from OCR output (OCR noise). CER 0.03310 -> 0.03306.
 exp_084	2026-03-25T19:42:12.851694+00:00	0.035867	{}	yes	79019733e64938f1d9ab7b5f674638825ec53c62	Fix en-dash patterns: comma-space-hyphen -> comma-space-en-dash (German/French), and hyphen at start of line -> en-dash (French dialogue). CER 0.03306 -> 0.03300.
+exp_085	2026-03-25T19:43:33.254443+00:00	0.035732	{}	yes	16581ceed23911e91919124d313b91defe5c409a	Fix German OCR error: 'fß' -> 'ß' (e.g. dafß -> daß, gewufßt -> gewußt). CER 0.03300 -> 0.03286.
