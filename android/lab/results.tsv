@@ -85,3 +85,5 @@ exp_084	2026-03-25T19:42:12.851694+00:00	0.035867	{}	yes	79019733e64938f1d9ab7b5
 exp_085	2026-03-25T19:43:33.254443+00:00	0.035732	{}	yes	16581ceed23911e91919124d313b91defe5c409a	Fix German OCR error: 'fß' -> 'ß' (e.g. dafß -> daß, gewufßt -> gewußt). CER 0.03300 -> 0.03286.
 exp_086	2026-03-25T19:45:38.771210+00:00	0.035642	{}	yes	856e083aedb617fee99b9186b44c0765cba65fbe	Fix Vietnamese-style diacritics misapplied by OCR (ộ->ô, ả->ä, ế->é) and French 'oœ'->'œ' (coœur->cœur). CER 0.03286 -> 0.03277.
 exp_087	2026-03-25T19:49:07.568231+00:00	0.035537	{}	yes	6413f0453726f6bbbc8390e47257ba626b7270a7	Fix French dropped apostrophes: quil->qu'il, jen->j'en, jai->j'ai, Cétait->C'était. CER 0.03277 -> 0.03266.
+exp_088	2026-03-25T19:50:39.949457+00:00	0.039031	{}	no	reverted	Spell correction with case-insensitive dict lookup still too aggressive. CER regressed 0.033 to 0.036.
+exp_089	2026-03-25T19:52:11.405219+00:00	0.035432	{}	yes	10649a6521aae2eb3593bb4c56af1817dc484796	Replace í (i-acute) with i. This character is rarely correct in en/fr/de/it text - OCR misapplies it instead of ì or plain i. CER 0.03266 -> 0.03255.

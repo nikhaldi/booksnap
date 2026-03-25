@@ -372,6 +372,9 @@ class BookSnapPipeline(
         result = result.replace("\u1EBF", "\u00E9") // ế -> é
         // Fix French: 'oœ' is OCR artifact for 'œ' (e.g. coœur -> cœur)
         result = result.replace("oœ", "œ")
+        // Fix wrong accent: í (i-acute) is rarely correct in en/fr/de/it text
+        // OCR misapplies it instead of ì or plain i
+        result = result.replace("í", "i")
         // Fix French dropped apostrophes in common elisions
         result = result.replace(Regex("\\bquil\\b"), "qu'il")
         result = result.replace(Regex("\\bjen\\b"), "j'en")
