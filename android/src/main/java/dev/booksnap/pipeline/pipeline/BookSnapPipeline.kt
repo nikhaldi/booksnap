@@ -44,23 +44,26 @@ class BookSnapPipeline(
             ?: return PageResult(text = "")
         val bitmap = applyExifRotation(imagePath, rawBitmap)
         val deskewed = deskewImage(bitmap)
+
+        // Run OCR on original (deskewed) image for page number extraction
+        val origBlocks = engine.recognize(deskewed)
+
+        // Extract page number from original (unfiltered) OCR
+        val pageNumberResult = if (origBlocks.isNotEmpty()) {
+            extractPageNumber(origBlocks, bitmap.height)
+        } else null
+
+        // Run OCR on denoised image for text content
         val denoised = denoiseImage(deskewed)
-
         val blocks = engine.recognize(denoised)
-        if (blocks.isEmpty()) return PageResult(text = "")
-
-        // Extract page number from ALL blocks before any filtering
-        val pageNumberResult = extractPageNumber(blocks, bitmap.height)
+        if (blocks.isEmpty()) return PageResult(text = "", pageNumber = pageNumberResult?.second)
 
         // Filter out facing-page text by keeping only blocks from the dominant side
         val filtered = filterFacingPage(blocks, bitmap.width)
 
-        // Remove page number block from text blocks
-        val textBlocks = if (pageNumberResult != null) {
-            filtered.filter { it !== pageNumberResult.first }
-        } else {
-            filtered
-        }
+        // Don't try to remove the page number block (objects differ between OCR runs)
+        // The line-level page number text removal in cleanedLines handles this
+        val textBlocks = filtered
 
         // Extract all lines from all blocks
         val allLines = textBlocks.flatMap { it.lines }

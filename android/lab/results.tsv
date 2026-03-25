@@ -34,3 +34,8 @@ exp_032	2026-03-25T13:02:21.183831+00:00	0.055560	{}	no	reverted	Downscaling to 
 exp_034	2026-03-25T13:05:29.217078+00:00	0.046820	{}	yes	3313a4937d1d64778c2938891f10c4448e89d047	Remove short header-like lines in top margin that are much shorter than body text. CER 0.042 -> 0.041.
 exp_035	2026-03-25T13:06:56.636737+00:00	0.046670	{}	yes	e70f5e3107fa350b986477bf22d918b92220292b	Filter short noise lines in bottom margin (background text, game boards, etc). CER 0.041 -> 0.041.
 exp_036	2026-03-25T13:13:48.137665+00:00	0.045850	{}	yes	1e69cfcea1af8cb808120d5a5f3169db94ba2b27	Bilateral filter (d=9, sigma=75) for noise reduction before OCR. CER 0.041 -> 0.038. Page accuracy dropped 67.6% -> 58.8% but net score improved.
+exp_037	2026-03-25T13:14:27.367679+00:00	0.049340	{}	no	reverted	Lighter bilateral filter (d=7, sigma=50) was worse than d=9/sigma=75. Reverting to previous settings.
+exp_038	2026-03-25T13:16:29.835533+00:00	0.046760	{}	no	reverted	Background normalization (morphological closing) was worse than bilateral filter and added 350ms latency. Reverted to bilateral filter.
+exp_039	2026-03-25T13:19:21.706509+00:00	0.051030	{}	no	reverted	fastNlMeansDenoisingColored was way too slow (2976ms) and worse results. Reverted to bilateral filter.
+exp_040	2026-03-25T13:21:26.526219+00:00	0.045930	{}	no	reverted	Short-line paragraph break minimum length threshold didn't help. The change helped some samples but hurt others. Reverted.
+exp_041	2026-03-25T13:25:55.333607+00:00	0.044820	{}	yes	e8eee1c49ed97886a4538452d9fc2eef14af46a3	Dual OCR: original image for page numbers, denoised image for text. Recovers page accuracy (58.8% -> 67.6%) while keeping denoised CER benefit. Score 0.04585 -> 0.04482.
