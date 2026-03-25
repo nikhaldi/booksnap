@@ -72,12 +72,64 @@ class BookSnapPipeline(
             sortedLines
         }
 
-        val rawText = cleanedLines.joinToString("\n") { it.text }
-        val text = rejoinHyphenatedWords(rawText)
+        val paragraphs = joinLinesIntoParagraphs(cleanedLines)
+        val text = rejoinHyphenatedWords(paragraphs)
         return PageResult(
             text = text,
             pageNumber = pageNum
         )
+    }
+
+    /**
+     * Join consecutive visual lines into paragraphs.
+     * Uses vertical gap between lines to detect paragraph breaks.
+     * Lines within the same paragraph are joined with a space.
+     */
+    private fun joinLinesIntoParagraphs(lines: List<Text.Line>): String {
+        if (lines.isEmpty()) return ""
+        if (lines.size == 1) return lines[0].text
+
+        // Calculate gaps between consecutive lines
+        val gaps = mutableListOf<Int>()
+        for (i in 0 until lines.size - 1) {
+            val currentBottom = lines[i].boundingBox?.bottom ?: 0
+            val nextTop = lines[i + 1].boundingBox?.top ?: 0
+            gaps.add(nextTop - currentBottom)
+        }
+
+        // Calculate median line height for scale reference
+        val lineHeights = lines.mapNotNull { it.boundingBox?.let { box -> box.bottom - box.top } }
+        val medianHeight = if (lineHeights.isNotEmpty()) {
+            lineHeights.sorted()[lineHeights.size / 2]
+        } else {
+            30
+        }
+
+        // A paragraph break is when the gap is significantly larger than the median line height
+        // Typical line spacing is ~0-50% of line height, paragraph spacing is >80%
+        val paragraphGapThreshold = medianHeight * 0.8
+
+        val result = StringBuilder()
+        result.append(lines[0].text)
+
+        for (i in 1 until lines.size) {
+            val gap = gaps[i - 1]
+            if (gap > paragraphGapThreshold) {
+                result.append("\n")
+            } else {
+                // Join within paragraph with a space (unless previous line ends with hyphen)
+                val prevText = lines[i - 1].text
+                if (prevText.endsWith("-")) {
+                    // Don't add space - the hyphen rejoin will handle this
+                    result.append("\n")
+                } else {
+                    result.append(" ")
+                }
+            }
+            result.append(lines[i].text)
+        }
+
+        return result.toString()
     }
 
     /**

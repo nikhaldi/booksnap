@@ -8,3 +8,4 @@ exp_006	2026-03-25T12:12:51.813535+00:00	0.077880	{}	yes	0d1e19fa3177e57a4a37a7c
 exp_007	2026-03-25T12:14:37.636881+00:00	0.074950	{}	yes	59327935399d258b0a816bb1dea460805541226b	Rejoin hyphenated line breaks (e.g. 'won-\nder' -> 'wonder'). CER 0.068 -> 0.065.
 exp_008	2026-03-25T12:16:30.419061+00:00	0.073190	{}	yes	2b57df689ed4c1b5c4f7be9d9ef038f3f70cf01f	Extract page numbers from ALL blocks before facing-page filter, and remove page number text from output. Page accuracy 44.1% -> 52.9%.
 exp_009	2026-03-25T12:28:13.695610+00:00	0.069870	{}	yes	473150fdd1a98fba7c945302c176c7e63b2f7e88	Line-level page number extraction with 20% margins. Scans individual lines for standalone numbers and header patterns. Page accuracy 52.9% -> 64.7%.
+exp_010	2026-03-25T12:29:56.171873+00:00	0.060810	{}	yes	19c7e221789d0316f246fd23de868517b6a5fd1f	Join visual lines into paragraphs using Y-gap detection. CER 0.064 -> 0.055, WER 0.22 -> 0.13.
