@@ -261,7 +261,7 @@ class BookSnapPipeline(
             // This avoids false breaks from truncated lines near the book spine
             val endsWithPunctuation = prevText.trimEnd().let { t ->
                 val last = t.lastOrNull()
-                last != null && ".!?\"')>\u00BB\u2014\u201D\u2019\u2026".contains(last)
+                last != null && ".!?\"')>\u00AB\u00BB\u2014\u201D\u2019\u2026".contains(last)
             }
 
             // Detect dialogue/quote paragraph starts
