@@ -129,7 +129,8 @@ class BookSnapPipeline(
         }
 
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
-        val text = rejoinHyphenatedWords(paragraphs)
+        val postProcessed = splitDialogueParagraphs(paragraphs)
+        val text = rejoinHyphenatedWords(postProcessed)
 
         // Compute text bounds as union of all cleaned line bounding boxes
         val rawTextBounds = computeUnionBounds(cleanedLines.map { it.boundingBox })
@@ -257,6 +258,33 @@ class BookSnapPipeline(
         }
 
         return result.toString()
+    }
+
+    /**
+     * Split text at dialogue boundaries that were missed by line-level detection.
+     * Handles patterns like closing-quote + opening-quote within same line.
+     */
+    private fun splitDialogueParagraphs(text: String): String {
+        var result = text
+        // Split after closing guillemet/quote followed by sentence start
+        // e.g., "...Pasquale». Restammo" -> "...Pasquale».\nRestammo"
+        result = result.replace(Regex("(\u00BB[.!?]*) (\\p{Lu})")) { match ->
+            "${match.groupValues[1]}\n${match.groupValues[2]}"
+        }
+        // Split before opening guillemet after colon
+        // e.g., "...disse cupo: «Sì" -> "...disse cupo:\n«Sì"
+        result = result.replace(Regex(": (\u00AB)")) { match ->
+            ":\n${match.groupValues[1]}"
+        }
+        // Same for English-style quotes: closing " followed by capital
+        result = result.replace(Regex("(\u201D[.!?]*) (\\p{Lu})")) { match ->
+            "${match.groupValues[1]}\n${match.groupValues[2]}"
+        }
+        // Colon followed by opening "
+        result = result.replace(Regex(": (\u201C)")) { match ->
+            ":\n${match.groupValues[1]}"
+        }
+        return result
     }
 
     /**
