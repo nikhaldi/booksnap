@@ -1,0 +1,3 @@
+experiment_id	timestamp	score	metrics	kept	commit_sha	notes
+exp_001	2026-03-25T12:00:56.408732+00:00	0.186171	{}	yes	1230e37b23a986b63b96fb06cfd86aed66b11221	Filter facing-page text by splitting blocks into left/right halves based on image center, keeping dominant side. CER 0.1836->0.1696.
+exp_002	2026-03-25T12:03:13.929566+00:00	0.148899	{}	yes	d0ad763aab58e7416f6117e34436268860fe0eac	Replace image-center split with gap-based spine detection for facing-page filtering. Finds largest horizontal gap between text blocks to identify spine. CER 0.1696->0.1315.

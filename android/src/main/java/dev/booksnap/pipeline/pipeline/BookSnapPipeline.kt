@@ -37,8 +37,56 @@ class BookSnapPipeline(
         val bitmap = applyExifRotation(imagePath, rawBitmap)
 
         val blocks = engine.recognize(bitmap)
-        val text = blocks.joinToString("\n") { it.text }
+        if (blocks.isEmpty()) return PageResult(text = "")
+
+        // Filter out facing-page text by keeping only blocks from the dominant side
+        val filtered = filterFacingPage(blocks, bitmap.width)
+
+        // Sort blocks top-to-bottom by their bounding box top edge
+        val sorted = filtered.sortedBy { it.boundingBox.top }
+
+        val text = sorted.joinToString("\n") { it.text }
         return PageResult(text = text)
+    }
+
+    private fun filterFacingPage(blocks: List<OcrBlock>, imageWidth: Int): List<OcrBlock> {
+        if (blocks.size <= 1) return blocks
+
+        data class BlockInfo(val block: OcrBlock, val centerX: Int, val textLen: Int)
+        val infos = blocks.map { block ->
+            BlockInfo(block, block.boundingBox.centerX(), block.text.length)
+        }
+
+        // Find the spine: largest gap in block center X positions
+        val sortedByX = infos.sortedBy { it.centerX }
+        var bestGapPos = imageWidth / 2
+        var bestGapSize = 0
+        for (i in 0 until sortedByX.size - 1) {
+            val gap = sortedByX[i + 1].centerX - sortedByX[i].centerX
+            if (gap > bestGapSize) {
+                bestGapSize = gap
+                bestGapPos = (sortedByX[i].centerX + sortedByX[i + 1].centerX) / 2
+            }
+        }
+
+        // Only split if the gap is significant (>5% of image width)
+        if (bestGapSize < imageWidth * 0.05) {
+            return blocks
+        }
+
+        // Calculate total text length on each side of the gap
+        var leftLen = 0
+        var rightLen = 0
+        for (info in infos) {
+            if (info.centerX < bestGapPos) leftLen += info.textLen
+            else rightLen += info.textLen
+        }
+
+        val keepLeft = leftLen > rightLen
+
+        return infos.filter { info ->
+            if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
+        }.map { it.block }
     }
 
     private fun applyExifRotation(path: String, bitmap: Bitmap): Bitmap {
