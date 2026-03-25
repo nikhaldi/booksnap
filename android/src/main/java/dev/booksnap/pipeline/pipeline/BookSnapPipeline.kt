@@ -5,6 +5,13 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.Core
+import org.opencv.core.Mat
+import org.opencv.core.Point
+import org.opencv.core.Size
+import org.opencv.imgproc.Imgproc
 
 /**
  * Baseline pipeline: loads the image and runs OCR with default settings.
@@ -27,6 +34,7 @@ class BookSnapPipeline(
     private var langDetector: LanguageDetector? = null
 
     override suspend fun initialize(context: Context, options: Map<String, Any>) {
+        OpenCVLoader.initLocal()
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
     }
@@ -35,8 +43,9 @@ class BookSnapPipeline(
         val rawBitmap = BitmapFactory.decodeFile(imagePath)
             ?: return PageResult(text = "")
         val bitmap = applyExifRotation(imagePath, rawBitmap)
+        val deskewed = deskewImage(bitmap)
 
-        val blocks = engine.recognize(bitmap)
+        val blocks = engine.recognize(deskewed)
         if (blocks.isEmpty()) return PageResult(text = "")
 
         // Extract page number from ALL blocks before any filtering
@@ -327,6 +336,78 @@ class BookSnapPipeline(
         return infos.filter { info ->
             if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
         }.map { it.block }
+    }
+
+    private fun deskewImage(bitmap: Bitmap): Bitmap {
+        val mat = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+
+        // Convert to grayscale
+        val gray = Mat()
+        Imgproc.cvtColor(mat, gray, Imgproc.COLOR_RGBA2GRAY)
+
+        // Edge detection
+        val edges = Mat()
+        Imgproc.Canny(gray, edges, 50.0, 150.0, 3)
+
+        // Detect lines using Hough transform
+        val lines = Mat()
+        Imgproc.HoughLinesP(edges, lines, 1.0, Math.PI / 180, 100, 100.0, 20.0)
+
+        if (lines.rows() == 0) {
+            gray.release()
+            edges.release()
+            lines.release()
+            mat.release()
+            return bitmap
+        }
+
+        // Calculate median angle of near-horizontal lines
+        val angles = mutableListOf<Double>()
+        for (i in 0 until lines.rows()) {
+            val line = lines.get(i, 0)
+            val dx = line[2] - line[0]
+            val dy = line[3] - line[1]
+            val angle = Math.toDegrees(Math.atan2(dy, dx))
+            // Only consider near-horizontal lines (within 15 degrees)
+            if (Math.abs(angle) < 15) {
+                angles.add(angle)
+            }
+        }
+
+        gray.release()
+        edges.release()
+        lines.release()
+
+        if (angles.isEmpty()) {
+            mat.release()
+            return bitmap
+        }
+
+        val sortedAngles = angles.sorted()
+        val medianAngle = sortedAngles[sortedAngles.size / 2]
+
+        // Only deskew if angle is small but noticeable
+        if (Math.abs(medianAngle) < 0.3 || Math.abs(medianAngle) > 10) {
+            mat.release()
+            return bitmap
+        }
+
+        // Rotate to correct skew
+        val center = Point(mat.cols() / 2.0, mat.rows() / 2.0)
+        val rotMat = Imgproc.getRotationMatrix2D(center, medianAngle, 1.0)
+        val rotated = Mat()
+        Imgproc.warpAffine(mat, rotated, rotMat, Size(mat.cols().toDouble(), mat.rows().toDouble()),
+            Imgproc.INTER_LINEAR, Core.BORDER_REPLICATE)
+
+        val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(rotated, result)
+
+        mat.release()
+        rotMat.release()
+        rotated.release()
+
+        return result
     }
 
     private fun applyExifRotation(path: String, bitmap: Bitmap): Bitmap {

@@ -18,3 +18,6 @@ exp_016	2026-03-25T12:38:47.572929+00:00	0.054110	{}	yes	211e6d044b78d0194ce7f36
 exp_017	2026-03-25T12:40:31.258169+00:00	0.077310	{}	no	reverted	Adding text ratio threshold to block-level facing-page filter made things much worse. Facing page text leaked through. Reverted.
 exp_018	2026-03-25T12:41:36.729527+00:00	0.055350	{}	no	reverted	Indentation-based paragraph detection was too aggressive, creating false paragraph breaks. Reverted.
 exp_019	2026-03-25T12:42:38.279279+00:00	0.053390	{}	yes	c82f929dc196d89d6fbaacb2b3d8faaeb14dcda0	Filter out very short lines (<4 chars) that are OCR noise from bleed-through. CER 0.048 -> 0.047.
+exp_020	2026-03-25T12:44:19.971344+00:00	0.053420	{}	no	reverted	Widen page number margin to 25%. Page accuracy improved 64.7% -> 67.6% but CER slightly regressed. Net score slightly worse.
+exp_021	2026-03-25T12:45:28.469537+00:00	0.053490	{}	no	reverted	Regex to fix missing spaces between lowercase-uppercase was too aggressive, hurting German text with internal capitals. Reverted.
+exp_022	2026-03-25T12:47:02.998027+00:00	0.048480	{}	yes	608309f63b9b2364225725c5079fb87aefb27b2e	OpenCV deskew using Hough line detection. CER 0.047 -> 0.043, PageAcc 64.7% -> 67.6%. Latency 126ms -> 249ms (within budget).
