@@ -375,6 +375,8 @@ class BookSnapPipeline(
         // Fix wrong accent: í (i-acute) is rarely correct in en/fr/de/it text
         // OCR misapplies it instead of ì or plain i
         result = result.replace("í", "i")
+        // Fix Italian: così is almost always accented (cosi is not a word)
+        result = result.replace(Regex("\\bcosi\\b"), "cos\u00EC")
         // Fix French dropped apostrophes in common elisions
         result = result.replace(Regex("\\bquil\\b"), "qu'il")
         result = result.replace(Regex("\\bjen\\b"), "j'en")

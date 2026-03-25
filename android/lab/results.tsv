@@ -87,3 +87,4 @@ exp_086	2026-03-25T19:45:38.771210+00:00	0.035642	{}	yes	856e083aedb617fee99b918
 exp_087	2026-03-25T19:49:07.568231+00:00	0.035537	{}	yes	6413f0453726f6bbbc8390e47257ba626b7270a7	Fix French dropped apostrophes: quil->qu'il, jen->j'en, jai->j'ai, Cétait->C'était. CER 0.03277 -> 0.03266.
 exp_088	2026-03-25T19:50:39.949457+00:00	0.039031	{}	no	reverted	Spell correction with case-insensitive dict lookup still too aggressive. CER regressed 0.033 to 0.036.
 exp_089	2026-03-25T19:52:11.405219+00:00	0.035432	{}	yes	10649a6521aae2eb3593bb4c56af1817dc484796	Replace í (i-acute) with i. This character is rarely correct in en/fr/de/it text - OCR misapplies it instead of ì or plain i. CER 0.03266 -> 0.03255.
+exp_090	2026-03-25T19:53:39.835376+00:00	0.035402	{}	yes	11042d687f524ac66ce376547495322e74bd7796	Fix Italian 'cosi' -> 'così' (unambiguous accent restoration). CER 0.03255 -> 0.03252.
