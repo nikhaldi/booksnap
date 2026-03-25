@@ -200,7 +200,15 @@ class BookSnapPipeline(
                 last != null && ".!?\"')>\u00BB\u2014\u201D\u2019\u2026".contains(last)
             }
 
-            if (gap > paragraphGapThreshold || (prevIsShort && endsWithPunctuation)) {
+            // Detect dialogue/quote paragraph starts
+            val currText = lines[i].text.trimStart()
+            val startsWithQuote = currText.startsWith("\u00AB") || // «
+                currText.startsWith("\u201C") || // "
+                currText.startsWith("\u2018") || // '
+                currText.startsWith("\u00BB")    // » (used as opening quote in German)
+
+            if (gap > paragraphGapThreshold || (prevIsShort && endsWithPunctuation) ||
+                (startsWithQuote && endsWithPunctuation)) {
                 result.append("\n")
             } else if (prevText.endsWith("-")) {
                 // Don't add space - the hyphen rejoin will handle this
