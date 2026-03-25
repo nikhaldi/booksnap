@@ -217,7 +217,7 @@ class BookSnapPipeline(
             sortedLeftEdges.firstOrNull() ?: 0
         }
         // Indentation threshold: line starts more than 1.5x median height to the right of base
-        val indentThreshold = baseLeftMargin + (medianHeight * 1.5).toInt()
+        val indentThreshold = baseLeftMargin + medianHeight
 
         val result = StringBuilder()
         result.append(lines[0].text)

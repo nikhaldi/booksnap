@@ -62,3 +62,6 @@ exp_061	2026-03-25T14:53:42.726674+00:00	0.045436	{}	no	reverted	Gentle CLAHE on
 exp_062	2026-03-25T14:56:43.439123+00:00	0.037850	{}	yes	242ed0befedd9ff9f24e6eacea3b7809872b190d	Split paragraphs at dialogue boundaries: after closing guillemets/quotes before uppercase, and before opening guillemets/quotes after colon. CER 0.03453 -> 0.03442.
 exp_063	2026-03-25T15:00:18.206314+00:00	0.037850	{}	no	reverted	Adaptive paragraph gap threshold (median gap + 0.5× height) instead of fixed 0.8× height. No improvement. Reverted.
 exp_064	2026-03-25T15:01:56.636124+00:00	0.037805	{}	yes	b040e554d9674c1ded712e568a15ca4d1f6626ab	Widen page number search margin from 20% to 25%. CER 0.03442 -> 0.03437. Score 0.03785 -> 0.03780.
+exp_065	2026-03-25T15:03:43.092996+00:00	0.045619	{}	no	reverted	Two-pass bilateral filter (d=7, sigma=75 each) was much worse than single pass (d=11, sigma=100). CER regressed 0.034 -> 0.042. Reverted.
+exp_066	2026-03-25T15:06:19.684402+00:00	0.044944	{}	no	reverted	Reducing bilateral filter color sigma from 100 to 75 worsened CER. The current sigma=100 for both is optimal. Reverted.
+exp_067	2026-03-25T15:07:57.102072+00:00	0.037745	{}	yes	6a3b1073219f2d25f3057702440d6beb78c8b686	Lower indentation threshold from 1.5x to 1.0x median height for paragraph detection. Catches more indented paragraph starts. CER 0.03437 -> 0.03431.
