@@ -190,8 +190,14 @@ class BookSnapPipeline(
             val prevRight = lines[i - 1].boundingBox.right
             val prevIsShort = prevRight < shortLineThreshold
             val prevText = lines[i - 1].text
+            // Only treat short lines as paragraph endings if they end with punctuation
+            // This avoids false breaks from truncated lines near the book spine
+            val endsWithPunctuation = prevText.trimEnd().let { t ->
+                val last = t.lastOrNull()
+                last != null && ".!?\"')>\u00BB\u2014\u201D\u2019\u2026".contains(last)
+            }
 
-            if (gap > paragraphGapThreshold || prevIsShort) {
+            if (gap > paragraphGapThreshold || (prevIsShort && endsWithPunctuation)) {
                 result.append("\n")
             } else if (prevText.endsWith("-")) {
                 // Don't add space - the hyphen rejoin will handle this
