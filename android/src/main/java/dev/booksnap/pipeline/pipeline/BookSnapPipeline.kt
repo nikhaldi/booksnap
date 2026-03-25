@@ -268,6 +268,20 @@ class BookSnapPipeline(
         var result = text.replace(Regex("-\\n(\\p{Ll})")) { match ->
             match.groupValues[1]
         }
+        // Fix missing apostrophes in common contractions
+        val contractions = mapOf(
+            "dont" to "don't", "didnt" to "didn't", "doesnt" to "doesn't",
+            "isnt" to "isn't", "wasnt" to "wasn't", "couldnt" to "couldn't",
+            "wouldnt" to "wouldn't", "shouldnt" to "shouldn't", "cant" to "can't",
+            "wont" to "won't", "hasnt" to "hasn't", "havent" to "haven't",
+            "hadnt" to "hadn't", "arent" to "aren't", "werent" to "weren't",
+            "youre" to "you're", "theyre" to "they're", "thats" to "that's",
+            "whats" to "what's", "heres" to "here's", "theres" to "there's",
+            "lets" to "let's", "wheres" to "where's", "whos" to "who's",
+        )
+        result = result.replace(Regex("\\b(\\w+)\\b")) { match ->
+            contractions[match.value] ?: match.value
+        }
         // Fix common OCR substitutions
         result = result.replace("--", "\u2014") // double hyphen to em dash
         // Space-hyphen-space between words is typically an em dash
