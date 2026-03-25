@@ -97,73 +97,58 @@ class BookSnapPipeline(
      * Returns the block and parsed page number, or null.
      */
     private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): Pair<OcrBlock, Int>? {
-        val marginFraction = 0.15 // top/bottom 15% of image
+        val marginFraction = 0.20 // top/bottom 20% of image
         val topThreshold = (imageHeight * marginFraction).toInt()
         val bottomThreshold = (imageHeight * (1.0 - marginFraction)).toInt()
 
-        // Priority 1: standalone number blocks in margins
-        val standaloneCandidates = mutableListOf<Pair<OcrBlock, Int>>()
-        // Priority 2: lines starting/ending with a number in margins (headers)
-        val headerCandidates = mutableListOf<Pair<OcrBlock, Int>>()
+        // Scan all individual lines across all blocks
+        data class Candidate(val block: OcrBlock, val pageNum: Int, val priority: Int, val lineY: Int)
+        val candidates = mutableListOf<Candidate>()
 
         for (block in blocks) {
-            val box = block.boundingBox
-            val centerY = box.centerY()
-            val inMargin = centerY < topThreshold || centerY > bottomThreshold
+            for (line in block.lines) {
+                val lineY = line.boundingBox.centerY()
+                val inMargin = lineY < topThreshold || lineY > bottomThreshold
+                if (!inMargin) continue
 
-            if (!inMargin) continue
+                val lineText = line.text.trim()
 
-            val text = block.text.trim()
-
-            // Check if the whole block is just a number
-            val num = text.replace("[^0-9]".toRegex(), "")
-            if (num.isNotEmpty() && num.length >= text.length * 0.5) {
-                val parsed = num.toIntOrNull()
-                if (parsed != null && parsed in 1..9999) {
-                    standaloneCandidates.add(Pair(block, parsed))
-                    continue
-                }
-            }
-
-            // Check first line for header pattern: starts with number like "110 ELENA FERRANTE"
-            val firstLine = block.lines.firstOrNull()
-            if (firstLine != null) {
-                val lineY = firstLine.boundingBox.centerY()
-                if (lineY < topThreshold || lineY > bottomThreshold) {
-                    val lineText = firstLine.text.trim()
-                    val startMatch = "^(\\d{1,4})\\s+\\D".toRegex().find(lineText)
-                    if (startMatch != null) {
-                        val parsed = startMatch.groupValues[1].toIntOrNull()
-                        if (parsed != null && parsed in 1..9999) {
-                            headerCandidates.add(Pair(block, parsed))
-                            continue
-                        }
+                // Priority 1: line is just a number (standalone page number)
+                val justNum = lineText.replace("[^0-9]".toRegex(), "")
+                if (justNum.isNotEmpty() && justNum.length >= lineText.length * 0.6) {
+                    val parsed = justNum.toIntOrNull()
+                    if (parsed != null && parsed in 1..9999) {
+                        candidates.add(Candidate(block, parsed, 1, lineY))
+                        continue
                     }
                 }
-            }
 
-            // Check last line for pattern: ends with number like "The Guns of August 86"
-            val lastLine = block.lines.lastOrNull()
-            if (lastLine != null) {
-                val lineY = lastLine.boundingBox.centerY()
-                if (lineY < topThreshold || lineY > bottomThreshold) {
-                    val lineText = lastLine.text.trim()
-                    val endMatch = "\\D\\s+(\\d{1,4})$".toRegex().find(lineText)
-                    if (endMatch != null) {
-                        val parsed = endMatch.groupValues[1].toIntOrNull()
-                        if (parsed != null && parsed in 1..9999) {
-                            headerCandidates.add(Pair(block, parsed))
-                        }
+                // Priority 2: line starts with number (header like "110 ELENA FERRANTE")
+                val startMatch = "^(\\d{1,4})\\s+\\D".toRegex().find(lineText)
+                if (startMatch != null) {
+                    val parsed = startMatch.groupValues[1].toIntOrNull()
+                    if (parsed != null && parsed in 1..9999) {
+                        candidates.add(Candidate(block, parsed, 2, lineY))
+                        continue
+                    }
+                }
+
+                // Priority 3: line ends with number (header like "VINELAND 81")
+                val endMatch = "\\D\\s+(\\d{1,4})$".toRegex().find(lineText)
+                if (endMatch != null) {
+                    val parsed = endMatch.groupValues[1].toIntOrNull()
+                    if (parsed != null && parsed in 1..9999) {
+                        candidates.add(Candidate(block, parsed, 3, lineY))
                     }
                 }
             }
         }
 
-        // Prefer standalone numbers, then header-embedded numbers
-        if (standaloneCandidates.isNotEmpty()) {
-            return standaloneCandidates.maxByOrNull { it.first.boundingBox.centerY() }
-        }
-        return headerCandidates.firstOrNull()
+        if (candidates.isEmpty()) return null
+
+        // Sort by priority (lower is better), then prefer bottom of page
+        val best = candidates.sortedWith(compareBy<Candidate> { it.priority }.thenByDescending { it.lineY }).first()
+        return Pair(best.block, best.pageNum)
     }
 
     private fun filterFacingPageLines(lines: List<OcrLine>, imageWidth: Int): List<OcrLine> {
