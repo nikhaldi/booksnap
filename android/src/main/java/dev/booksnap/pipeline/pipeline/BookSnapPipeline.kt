@@ -526,9 +526,11 @@ class BookSnapPipeline(
     private fun filterFacingPage(blocks: List<OcrBlock>, imageWidth: Int): List<OcrBlock> {
         if (blocks.size <= 1) return blocks
 
-        data class BlockInfo(val block: OcrBlock, val centerX: Int, val textLen: Int)
+        // Collect block centers with their text lengths
+        data class BlockInfo(val block: OcrBlock, val centerX: Int, val leftX: Int, val rightX: Int, val textLen: Int)
         val infos = blocks.map { block ->
-            BlockInfo(block, block.boundingBox.centerX(), block.text.length)
+            val box = block.boundingBox
+            BlockInfo(block, box.centerX(), box.left, box.right, block.text.length)
         }
 
         // Find the spine: largest gap in block center X positions
@@ -558,8 +560,26 @@ class BookSnapPipeline(
 
         val keepLeft = leftLen > rightLen
 
-        return infos.filter { info ->
+        // Rescue minor-side blocks whose left edge overlaps with the major column.
+        // Short body text lines (e.g. paragraph endings) start at the same left margin
+        // as full-width lines but have center X shifted toward the spine.
+        val majorBlocks = infos.filter { info ->
             if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
+        }
+        val majorLeftEdges = majorBlocks.map { it.leftX }.sorted()
+        val majorMedianLeft = if (majorLeftEdges.isNotEmpty()) {
+            majorLeftEdges[majorLeftEdges.size / 4]
+        } else 0
+        val leftEdgeTolerance = (imageWidth * 0.05).toInt()
+
+        return infos.filter { info ->
+            val onMajorSide = if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
+            if (onMajorSide) {
+                true
+            } else {
+                // Keep minor-side blocks whose left edge aligns with the major column
+                Math.abs(info.leftX - majorMedianLeft) < leftEdgeTolerance
+            }
         }.map { it.block }
     }
 
