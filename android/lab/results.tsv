@@ -25,3 +25,10 @@ exp_023	2026-03-25T12:49:02.475540+00:00	0.048500	{}	no	reverted	Image sharpenin
 exp_024	2026-03-25T12:50:39.911798+00:00	0.048260	{}	yes	eaadda0d924f5cc15dac7d1b762b314e9621ec92	Remove all-caps running header lines in top margin (e.g. 'L'AMICA GENIALE'). CER 0.043 -> 0.043.
 exp_025	2026-03-25T12:53:37.960501+00:00	0.048270	{}	no	reverted	More conservative short-line paragraph detection (75th percentile reference, 0.82 threshold). No improvement. Reverted.
 exp_026	2026-03-25T12:54:18.198879+00:00	0.048050	{}	yes	e72ad8d0ee3a171636a5eff3e7623ab664b177c2	Also remove title-case header lines in top margin (e.g. 'Du côté de chez Swann'). CER 0.0426 -> 0.0424.
+exp_027	2026-03-25T12:56:58.808029+00:00	0.050600	{}	no	reverted	OCR-aware page number regex was too loose, matching normal text. CER regressed. Reverted to original regex patterns.
+exp_028	2026-03-25T12:58:28.187461+00:00	0.048050	{}	no	reverted	Lower paragraph gap threshold (0.5x line height). No improvement - dialogue paragraphs don't have extra spacing.
+exp_029	2026-03-25T12:59:37.468927+00:00	0.048330	{}	no	reverted	Indentation-based paragraph detection (refined with 1.5x height threshold). Still creates false positives. Reverted.
+exp_030	2026-03-25T13:00:32.706060+00:00	0.048050	{}	no	reverted	Lower deskew minimum angle (0.1 vs 0.3). No change - no images have skew in that range.
+exp_031	2026-03-25T13:01:23.931458+00:00	0.048050	{}	no	reverted	Conditional line-level filter (only when block filter didn't split). No change - block filter always applies.
+exp_032	2026-03-25T13:02:21.183831+00:00	0.055560	{}	no	reverted	Downscaling to 1600px max hurt OCR quality. Page accuracy dropped to 41.2%. Reverted.
+exp_034	2026-03-25T13:05:29.217078+00:00	0.046820	{}	yes	3313a4937d1d64778c2938891f10c4448e89d047	Remove short header-like lines in top margin that are much shorter than body text. CER 0.042 -> 0.041.

@@ -82,6 +82,12 @@ class BookSnapPipeline(
         val imageHeight = bitmap.height
         val marginTop = (imageHeight * 0.15).toInt()
         val marginBottom = (imageHeight * 0.85).toInt()
+
+        // Detect running header: first line that is in top margin and much shorter than body lines
+        val medianTextLen = sortedLines.map { it.text.length }.sorted().let {
+            if (it.size >= 3) it[it.size / 2] else 100
+        }
+
         val cleanedLines = sortedLines.filter { line ->
             val trimmed = line.text.trim()
             val lineY = line.boundingBox.centerY()
@@ -102,6 +108,10 @@ class BookSnapPipeline(
                 // Remove if: has digit + is all-caps/title-case, OR short all-caps/title-case in top margin
                 if (hasDigit && (isAllCaps || isTitleCase)) return@filter false
                 if ((isAllCaps || isTitleCase) && lineY < marginTop && trimmed.length < 35) return@filter false
+                // Remove short header-like lines in top margin that are much shorter than body text
+                if (lineY < marginTop && trimmed.length < medianTextLen * 0.5 && trimmed.length < 40) {
+                    return@filter false
+                }
             }
 
             true
