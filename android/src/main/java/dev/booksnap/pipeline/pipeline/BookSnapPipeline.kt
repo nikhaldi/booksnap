@@ -58,8 +58,15 @@ class BookSnapPipeline(
         // Filter facing-page bleed at line level
         val filteredLines = filterFacingPageLines(allLines, bitmap.width)
 
+        // Remove very short lines that are likely OCR noise (bleed-through, artifacts)
+        val denoised = filteredLines.filter { line ->
+            val text = line.text.trim()
+            // Keep lines with at least 4 characters, or lines that are just a number (could be page num)
+            text.length >= 4 || text.toIntOrNull() != null
+        }
+
         // Sort by Y position for correct reading order
-        val sortedLines = filteredLines.sortedBy { it.boundingBox.top }
+        val sortedLines = denoised.sortedBy { it.boundingBox.top }
 
         // Remove page number lines and running header lines from text
         val pageNum = pageNumberResult?.second
@@ -68,7 +75,7 @@ class BookSnapPipeline(
         val marginBottom = (imageHeight * 0.85).toInt()
         val cleanedLines = sortedLines.filter { line ->
             val trimmed = line.text.trim()
-            val lineY = line.boundingBox?.centerY() ?: (imageHeight / 2)
+            val lineY = line.boundingBox.centerY()
             val inMargin = lineY < marginTop || lineY > marginBottom
 
             // Remove standalone page number lines
@@ -101,20 +108,20 @@ class BookSnapPipeline(
      * Uses vertical gap between lines to detect paragraph breaks.
      * Lines within the same paragraph are joined with a space.
      */
-    private fun joinLinesIntoParagraphs(lines: List<Text.Line>): String {
+    private fun joinLinesIntoParagraphs(lines: List<OcrLine>): String {
         if (lines.isEmpty()) return ""
         if (lines.size == 1) return lines[0].text
 
         // Calculate gaps between consecutive lines
         val gaps = mutableListOf<Int>()
         for (i in 0 until lines.size - 1) {
-            val currentBottom = lines[i].boundingBox?.bottom ?: 0
-            val nextTop = lines[i + 1].boundingBox?.top ?: 0
+            val currentBottom = lines[i].boundingBox.bottom
+            val nextTop = lines[i + 1].boundingBox.top
             gaps.add(nextTop - currentBottom)
         }
 
         // Calculate median line height for scale reference
-        val lineHeights = lines.mapNotNull { it.boundingBox?.let { box -> box.bottom - box.top } }
+        val lineHeights = lines.map { it.boundingBox.bottom - it.boundingBox.top }
         val medianHeight = if (lineHeights.isNotEmpty()) {
             lineHeights.sorted()[lineHeights.size / 2]
         } else {
@@ -122,7 +129,7 @@ class BookSnapPipeline(
         }
 
         // Calculate right edges to detect short lines (paragraph endings)
-        val rightEdges = lines.mapNotNull { it.boundingBox?.right }
+        val rightEdges = lines.map { it.boundingBox.right }
         val maxRightEdge = rightEdges.maxOrNull() ?: 0
         // A short line ends significantly before the right margin
         val shortLineThreshold = maxRightEdge * 0.85
@@ -137,7 +144,7 @@ class BookSnapPipeline(
 
         for (i in 1 until lines.size) {
             val gap = gaps[i - 1]
-            val prevRight = lines[i - 1].boundingBox?.right ?: maxRightEdge
+            val prevRight = lines[i - 1].boundingBox.right
             val prevIsShort = prevRight < shortLineThreshold
             val prevText = lines[i - 1].text
 
