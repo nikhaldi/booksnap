@@ -112,6 +112,10 @@ class BookSnapPipeline(
                 if (lineY < marginTop && trimmed.length < medianTextLen * 0.5 && trimmed.length < 40) {
                     return@filter false
                 }
+                // Remove short noise lines in bottom margin that are much shorter than body text
+                if (lineY > marginBottom && trimmed.length < medianTextLen * 0.4 && trimmed.length < 30) {
+                    return@filter false
+                }
             }
 
             true

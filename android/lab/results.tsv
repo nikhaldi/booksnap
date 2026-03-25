@@ -32,3 +32,4 @@ exp_030	2026-03-25T13:00:32.706060+00:00	0.048050	{}	no	reverted	Lower deskew mi
 exp_031	2026-03-25T13:01:23.931458+00:00	0.048050	{}	no	reverted	Conditional line-level filter (only when block filter didn't split). No change - block filter always applies.
 exp_032	2026-03-25T13:02:21.183831+00:00	0.055560	{}	no	reverted	Downscaling to 1600px max hurt OCR quality. Page accuracy dropped to 41.2%. Reverted.
 exp_034	2026-03-25T13:05:29.217078+00:00	0.046820	{}	yes	3313a4937d1d64778c2938891f10c4448e89d047	Remove short header-like lines in top margin that are much shorter than body text. CER 0.042 -> 0.041.
+exp_035	2026-03-25T13:06:56.636737+00:00	0.046670	{}	yes	e70f5e3107fa350b986477bf22d918b92220292b	Filter short noise lines in bottom margin (background text, game boards, etc). CER 0.041 -> 0.041.
