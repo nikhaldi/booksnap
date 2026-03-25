@@ -733,6 +733,11 @@ class BookSnapPipeline(
      * Only corrects words that are NOT in the dictionary and have exactly
      * one edit-distance-1 candidate that IS in the dictionary.
      */
+    private fun isValidInAnyDict(word: String): Boolean {
+        val lower = word.lowercase()
+        return hunspellCheckers.values.any { it.spell(word) || it.spell(lower) }
+    }
+
     private fun spellCorrectText(text: String, checker: Hunspell): String {
         val result = StringBuilder()
         var i = 0
@@ -754,8 +759,8 @@ class BookSnapPipeline(
     private fun tryCorrectWord(word: String, checker: Hunspell): String? {
         if (word.length < 5) return null
 
-        // Skip if already valid
-        if (checker.spell(word) || checker.spell(word.lowercase())) return null
+        // Skip if already valid in ANY language dictionary
+        if (isValidInAnyDict(word)) return null
 
         val lower = word.lowercase()
         val candidates = mutableSetOf<String>()
