@@ -5,13 +5,15 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
-import org.opencv.android.OpenCVLoader
-import org.opencv.android.Utils
 import org.opencv.core.Core
 import org.opencv.core.Mat
 import org.opencv.core.Point
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
+import org.apache.lucene.analysis.hunspell.Dictionary as HunspellDictionary
+import org.apache.lucene.analysis.hunspell.Hunspell
+import org.apache.lucene.store.ByteBuffersDirectory
+import java.io.BufferedInputStream
 
 /**
  * Baseline pipeline: loads the image and runs OCR with default settings.
@@ -32,11 +34,23 @@ class BookSnapPipeline(
 
     private lateinit var engine: OcrEngine
     private var langDetector: LanguageDetector? = null
+    private val hunspellCheckers = mutableMapOf<String, Hunspell>()
 
     override suspend fun initialize(context: Context, options: Map<String, Any>) {
-        OpenCVLoader.initLocal()
+        OpenCvCompat.init()
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
+        for (lang in listOf("en", "fr", "de", "it", "el")) {
+            try {
+                val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
+                val dicStream = BufferedInputStream(context.assets.open("hunspell/$lang.dic"))
+                val tempDir = ByteBuffersDirectory()
+                val dict = HunspellDictionary(tempDir, "hunspell_$lang", affStream, dicStream)
+                hunspellCheckers[lang] = Hunspell(dict)
+                affStream.close()
+                dicStream.close()
+            } catch (e: Exception) { /* skip unavailable dictionaries */ }
+        }
     }
 
     override suspend fun processImage(imagePath: String): PageResult {
@@ -49,8 +63,8 @@ class BookSnapPipeline(
         val origBlocks = engine.recognize(deskewed)
 
         // Run OCR on denoised image for text content
-        val denoised = denoiseImage(deskewed)
-        val blocks = engine.recognize(denoised)
+        val denoisedBmp = denoiseImage(deskewed)
+        val blocks = engine.recognize(denoisedBmp)
 
         // Extract page number from original OCR first, fallback to denoised OCR
         val pageNumberResult = (if (origBlocks.isNotEmpty()) {
@@ -131,7 +145,14 @@ class BookSnapPipeline(
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
         val postProcessed = splitDialogueParagraphs(paragraphs)
         val headerResult = removeHeaderPrefix(postProcessed, pageNum)
-        val text = rejoinHyphenatedWords(headerResult.text)
+        val rawText = rejoinHyphenatedWords(headerResult.text)
+        // Detect language and apply Lucene Hunspell spell correction
+        val textLang = try {
+            langDetector?.identifyLanguage(rawText.take(500)) ?: "und"
+        } catch (e: Exception) { "und" }
+        val text = if (textLang != "und" && hunspellCheckers.containsKey(textLang)) {
+            spellCorrectText(rawText, hunspellCheckers[textLang]!!)
+        } else rawText
 
         // Compute text bounds as union of all cleaned line bounding boxes
         val rawTextBounds = computeUnionBounds(cleanedLines.map { it.boundingBox })
@@ -536,7 +557,7 @@ class BookSnapPipeline(
 
     private fun denoiseImage(bitmap: Bitmap): Bitmap {
         val mat = Mat()
-        Utils.bitmapToMat(bitmap, mat)
+        OpenCvCompat.bitmapToMat(bitmap, mat)
         // Convert RGBA to BGR for bilateral filter
         val bgr = Mat()
         Imgproc.cvtColor(mat, bgr, Imgproc.COLOR_RGBA2BGR)
@@ -559,7 +580,7 @@ class BookSnapPipeline(
         val rgba = Mat()
         Imgproc.cvtColor(sharpened, rgba, Imgproc.COLOR_BGR2RGBA)
         val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(rgba, result)
+        OpenCvCompat.matToBitmap(rgba, result)
         mat.release()
         sharpened.release()
         rgba.release()
@@ -570,7 +591,7 @@ class BookSnapPipeline(
 
     private fun deskewImage(bitmap: Bitmap): DeskewResult {
         val mat = Mat()
-        Utils.bitmapToMat(bitmap, mat)
+        OpenCvCompat.bitmapToMat(bitmap, mat)
 
         // Convert to grayscale
         val gray = Mat()
@@ -631,7 +652,7 @@ class BookSnapPipeline(
             Imgproc.INTER_LINEAR, Core.BORDER_REPLICATE)
 
         val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(rotated, result)
+        OpenCvCompat.matToBitmap(rotated, result)
 
         mat.release()
         rotMat.release()
@@ -705,6 +726,77 @@ class BookSnapPipeline(
         }
         val matrix = Matrix().apply { postRotate(degrees) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    /**
+     * Spell-correct text using Lucene Hunspell with full affix expansion.
+     * Only corrects words that are NOT in the dictionary and have exactly
+     * one edit-distance-1 candidate that IS in the dictionary.
+     */
+    private fun spellCorrectText(text: String, checker: Hunspell): String {
+        val result = StringBuilder()
+        var i = 0
+        while (i < text.length) {
+            if (text[i].isLetter()) {
+                val start = i
+                while (i < text.length && text[i].isLetter()) i++
+                val word = text.substring(start, i)
+                val corrected = tryCorrectWord(word, checker)
+                result.append(corrected ?: word)
+            } else {
+                result.append(text[i])
+                i++
+            }
+        }
+        return result.toString()
+    }
+
+    private fun tryCorrectWord(word: String, checker: Hunspell): String? {
+        if (word.length < 5) return null
+
+        // Skip if already valid
+        if (checker.spell(word) || checker.spell(word.lowercase())) return null
+
+        val lower = word.lowercase()
+        val candidates = mutableSetOf<String>()
+
+        // Deletions (remove one character)
+        for (j in lower.indices) {
+            val c = lower.removeRange(j, j + 1)
+            if (c.length >= 4 && checker.spell(c)) candidates.add(c)
+        }
+
+        // Substitutions (a-z only)
+        for (j in lower.indices) {
+            for (ch in 'a'..'z') {
+                if (ch != lower[j]) {
+                    val c = lower.substring(0, j) + ch + lower.substring(j + 1)
+                    if (checker.spell(c)) candidates.add(c)
+                }
+            }
+        }
+
+        // Insertions (add one character)
+        for (j in 0..lower.length) {
+            for (ch in 'a'..'z') {
+                val c = lower.substring(0, j) + ch + lower.substring(j)
+                if (checker.spell(c)) candidates.add(c)
+            }
+        }
+
+        // Only accept if exactly one correction found (unambiguous)
+        if (candidates.size == 1) {
+            return applyCasing(word, candidates.first())
+        }
+        return null
+    }
+
+    private fun applyCasing(original: String, corrected: String): String {
+        if (original.all { it.isUpperCase() }) return corrected.uppercase()
+        if (original.firstOrNull()?.isUpperCase() == true) {
+            return corrected.replaceFirstChar { it.uppercase() }
+        }
+        return corrected
     }
 
     override suspend fun cleanup() {

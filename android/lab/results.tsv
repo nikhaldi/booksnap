@@ -89,3 +89,4 @@ exp_088	2026-03-25T19:50:39.949457+00:00	0.039031	{}	no	reverted	Spell correctio
 exp_089	2026-03-25T19:52:11.405219+00:00	0.035432	{}	yes	10649a6521aae2eb3593bb4c56af1817dc484796	Replace í (i-acute) with i. This character is rarely correct in en/fr/de/it text - OCR misapplies it instead of ì or plain i. CER 0.03266 -> 0.03255.
 exp_090	2026-03-25T19:53:39.835376+00:00	0.035402	{}	yes	11042d687f524ac66ce376547495322e74bd7796	Fix Italian 'cosi' -> 'così' (unambiguous accent restoration). CER 0.03255 -> 0.03252.
 exp_091	2026-03-25T19:59:37.141286+00:00	0.035567	{}	no	reverted	Dictionary-based word merging for split words still produces too many false positives. CER regressed.
+exp_092	2026-03-25T20:41:30.445683+00:00	0.035342	{}	yes	9ee0c39bcc498a07716ad5d6aad6ea72afb58411	Lucene Hunspell spell correction with ML Kit language detection and full affix expansion. Uses edit-distance-1 with unambiguous-only corrections (single valid candidate). CER 0.03252 -> 0.03246.
