@@ -261,7 +261,7 @@ class BookSnapPipeline(
             // This avoids false breaks from truncated lines near the book spine
             val endsWithPunctuation = prevText.trimEnd().let { t ->
                 val last = t.lastOrNull()
-                last != null && ".!?\"')>\u00AB\u00BB\u2014\u201D\u2019\u2026".contains(last)
+                last != null && ".!?:\"')>\u00AB\u00BB\u2014\u201D\u2019\u2026".contains(last)
             }
 
             // Detect dialogue/quote paragraph starts
@@ -326,6 +326,7 @@ class BookSnapPipeline(
     private fun splitDialogueParagraphs(text: String): String {
         var result = text
         // Split after closing guillemet/quote followed by sentence start
+        // e.g., "...Pasquale». Restammo" -> "...Pasquale».\nRestammo"
         // e.g., "...Pasquale». Restammo" -> "...Pasquale».\nRestammo"
         result = result.replace(Regex("(\u00BB[.!?]*) (\\p{Lu})")) { match ->
             "${match.groupValues[1]}\n${match.groupValues[2]}"
