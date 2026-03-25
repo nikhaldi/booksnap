@@ -327,14 +327,14 @@ class BookSnapPipeline(
         var result = text
         // Split after closing guillemet/quote followed by sentence start
         // e.g., "...Pasquale». Restammo" -> "...Pasquale».\nRestammo"
-        // e.g., "...Pasquale». Restammo" -> "...Pasquale».\nRestammo"
         result = result.replace(Regex("(\u00BB[.!?]*) (\\p{Lu})")) { match ->
             "${match.groupValues[1]}\n${match.groupValues[2]}"
         }
-        // Split before opening guillemet after colon
-        // e.g., "...disse cupo: «Sì" -> "...disse cupo:\n«Sì"
-        result = result.replace(Regex(": (\u00AB)")) { match ->
-            ":\n${match.groupValues[1]}"
+        // Split before opening guillemet after colon (dialogue pattern)
+        // Only when preceded by lowercase (dialogue: "disse cupo: «Sì")
+        // Avoids splitting mid-sentence references like "Palais Ducal : « l'Escalier"
+        result = result.replace(Regex("(\\p{Ll}): (\u00AB)")) { match ->
+            "${match.groupValues[1]}:\n${match.groupValues[2]}"
         }
         // Same for English-style quotes: closing " followed by capital
         result = result.replace(Regex("(\u201D[.!?]*) (\\p{Lu})")) { match ->
