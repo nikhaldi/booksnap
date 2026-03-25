@@ -105,8 +105,15 @@ class BookSnapPipeline(
             30
         }
 
-        // A paragraph break is when the gap is significantly larger than the median line height
-        // Typical line spacing is ~0-50% of line height, paragraph spacing is >80%
+        // Calculate right edges to detect short lines (paragraph endings)
+        val rightEdges = lines.mapNotNull { it.boundingBox?.right }
+        val maxRightEdge = rightEdges.maxOrNull() ?: 0
+        // A short line ends significantly before the right margin
+        val shortLineThreshold = maxRightEdge * 0.85
+
+        // A paragraph break is when:
+        // 1. The gap is significantly larger than the median line height, OR
+        // 2. The previous line is "short" (doesn't fill the full column width)
         val paragraphGapThreshold = medianHeight * 0.8
 
         val result = StringBuilder()
@@ -114,17 +121,17 @@ class BookSnapPipeline(
 
         for (i in 1 until lines.size) {
             val gap = gaps[i - 1]
-            if (gap > paragraphGapThreshold) {
+            val prevRight = lines[i - 1].boundingBox?.right ?: maxRightEdge
+            val prevIsShort = prevRight < shortLineThreshold
+            val prevText = lines[i - 1].text
+
+            if (gap > paragraphGapThreshold || prevIsShort) {
+                result.append("\n")
+            } else if (prevText.endsWith("-")) {
+                // Don't add space - the hyphen rejoin will handle this
                 result.append("\n")
             } else {
-                // Join within paragraph with a space (unless previous line ends with hyphen)
-                val prevText = lines[i - 1].text
-                if (prevText.endsWith("-")) {
-                    // Don't add space - the hyphen rejoin will handle this
-                    result.append("\n")
-                } else {
-                    result.append(" ")
-                }
+                result.append(" ")
             }
             result.append(lines[i].text)
         }
