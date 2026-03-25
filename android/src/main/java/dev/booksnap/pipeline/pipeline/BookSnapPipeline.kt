@@ -270,17 +270,17 @@ class BookSnapPipeline(
 
     private fun removeHeaderPrefix(text: String, existingPageNum: Int?): HeaderCleanResult {
         // Look for a number within first 60 chars preceded by title-like text
-        val match = "^(.{1,40}?)(\\d{1,4})\\s".toRegex().find(text)
+        val match = "^(.{1,55}?)(\\d{1,4})\\s".toRegex().find(text)
         if (match != null) {
             val prefix = match.groupValues[1].trim()
             val numStr = match.groupValues[2]
             val num = numStr.toIntOrNull()
             if (num != null && num in 1..9999 && prefix.isNotEmpty()) {
                 val words = prefix.split("\\s+".toRegex())
-                val isTitleLike = words.all { word ->
+                val isTitleLike = words.size >= 2 && words.all { word ->
                     word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
                 }
-                if (isTitleLike && prefix.length < 40) {
+                if (isTitleLike && prefix.length in 3..55) {
                     val afterHeader = text.substring(match.range.last + 1).trimStart()
                     val detectedPageNum = existingPageNum ?: num
                     return HeaderCleanResult(afterHeader, detectedPageNum)
