@@ -65,3 +65,7 @@ exp_064	2026-03-25T15:01:56.636124+00:00	0.037805	{}	yes	b040e554d9674c1ded712e5
 exp_065	2026-03-25T15:03:43.092996+00:00	0.045619	{}	no	reverted	Two-pass bilateral filter (d=7, sigma=75 each) was much worse than single pass (d=11, sigma=100). CER regressed 0.034 -> 0.042. Reverted.
 exp_066	2026-03-25T15:06:19.684402+00:00	0.044944	{}	no	reverted	Reducing bilateral filter color sigma from 100 to 75 worsened CER. The current sigma=100 for both is optimal. Reverted.
 exp_067	2026-03-25T15:07:57.102072+00:00	0.037745	{}	yes	6a3b1073219f2d25f3057702440d6beb78c8b686	Lower indentation threshold from 1.5x to 1.0x median height for paragraph detection. Catches more indented paragraph starts. CER 0.03437 -> 0.03431.
+exp_068	2026-03-25T15:08:49.355124+00:00	0.037760	{}	no	reverted	Lower indentation threshold to 0.7x was slightly worse than 1.0x. The 0.7x threshold creates some false positives. Reverted to 1.0x.
+exp_069	2026-03-25T15:10:49.829800+00:00	0.037880	{}	no	reverted	English straight-quote dialogue splitting (.' + capital) creates too many false positives. CER regressed. Reverted.
+exp_070	2026-03-25T15:12:39.250304+00:00	0.043924	{}	no	reverted	Unsharp mask sigma=2.0 was worse than sigma=3.0. CER regressed. Reverted.
+exp_071	2026-03-25T15:15:30.925009+00:00	0.036872	{}	yes	5c0e6d33d253cc773aa423ba927e4c58d43b1a22	Combined header prefix removal and page number extraction. Detects title-like header text before embedded page numbers, removes header from output, and uses the number. Page accuracy 79.4% -> 82.4%, CER 0.03431 -> 0.03402.

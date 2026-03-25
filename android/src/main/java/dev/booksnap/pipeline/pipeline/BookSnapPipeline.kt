@@ -130,7 +130,8 @@ class BookSnapPipeline(
 
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
         val postProcessed = splitDialogueParagraphs(paragraphs)
-        val text = rejoinHyphenatedWords(postProcessed)
+        val headerResult = removeHeaderPrefix(postProcessed, pageNum)
+        val text = rejoinHyphenatedWords(headerResult.text)
 
         // Compute text bounds as union of all cleaned line bounding boxes
         val rawTextBounds = computeUnionBounds(cleanedLines.map { it.boundingBox })
@@ -143,7 +144,7 @@ class BookSnapPipeline(
         }
 
         // Final fallback: extract page number from the assembled text itself
-        val finalPageNum = pageNum ?: extractPageNumberFromText(text)
+        val finalPageNum = headerResult.pageNum ?: extractPageNumberFromText(text)
 
         return PageResult(
             text = text,
@@ -258,6 +259,35 @@ class BookSnapPipeline(
         }
 
         return result.toString()
+    }
+
+    /**
+     * Detect and remove running header text at the start of output text.
+     * Returns pair of (cleaned text, detected page number or null).
+     * Patterns: "TITLE 123 actual text..." or "Author Name 42 text..."
+     */
+    private data class HeaderCleanResult(val text: String, val pageNum: Int?)
+
+    private fun removeHeaderPrefix(text: String, existingPageNum: Int?): HeaderCleanResult {
+        // Look for a number within first 60 chars preceded by title-like text
+        val match = "^(.{1,40}?)(\\d{1,4})\\s".toRegex().find(text)
+        if (match != null) {
+            val prefix = match.groupValues[1].trim()
+            val numStr = match.groupValues[2]
+            val num = numStr.toIntOrNull()
+            if (num != null && num in 1..9999 && prefix.isNotEmpty()) {
+                val words = prefix.split("\\s+".toRegex())
+                val isTitleLike = words.all { word ->
+                    word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
+                }
+                if (isTitleLike && prefix.length < 40) {
+                    val afterHeader = text.substring(match.range.last + 1).trimStart()
+                    val detectedPageNum = existingPageNum ?: num
+                    return HeaderCleanResult(afterHeader, detectedPageNum)
+                }
+            }
+        }
+        return HeaderCleanResult(text, existingPageNum)
     }
 
     /**
