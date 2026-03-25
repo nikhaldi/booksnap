@@ -64,7 +64,8 @@ class BookSnapPipeline(
     }
 
     /**
-     * Look for a page number: a small block near the top or bottom margin containing just a number.
+     * Look for a page number in blocks and lines near the top or bottom margin.
+     * Handles both standalone numbers and header lines like "110 ELENA FERRANTE" or "86 The Guns of August".
      * Returns the block and parsed page number, or null.
      */
     private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): Pair<OcrBlock, Int>? {
@@ -72,30 +73,69 @@ class BookSnapPipeline(
         val topThreshold = (imageHeight * marginFraction).toInt()
         val bottomThreshold = (imageHeight * (1.0 - marginFraction)).toInt()
 
-        val candidates = mutableListOf<Pair<OcrBlock, Int>>()
+        // Priority 1: standalone number blocks in margins
+        val standaloneCandidates = mutableListOf<Pair<OcrBlock, Int>>()
+        // Priority 2: lines starting/ending with a number in margins (headers)
+        val headerCandidates = mutableListOf<Pair<OcrBlock, Int>>()
 
         for (block in blocks) {
             val box = block.boundingBox
+            val centerY = box.centerY()
+            val inMargin = centerY < topThreshold || centerY > bottomThreshold
+
+            if (!inMargin) continue
+
             val text = block.text.trim()
 
-            // Page numbers are typically short numeric strings
+            // Check if the whole block is just a number
             val num = text.replace("[^0-9]".toRegex(), "")
-            if (num.isEmpty()) continue
-            // The text should be mostly numeric (allow some OCR noise)
-            if (num.length < text.length * 0.5) continue
-            // Page numbers are typically 1-4 digits
-            val parsed = num.toIntOrNull() ?: continue
-            if (parsed < 1 || parsed > 9999) continue
+            if (num.isNotEmpty() && num.length >= text.length * 0.5) {
+                val parsed = num.toIntOrNull()
+                if (parsed != null && parsed in 1..9999) {
+                    standaloneCandidates.add(Pair(block, parsed))
+                    continue
+                }
+            }
 
-            // Must be in top or bottom margin
-            val centerY = box.centerY()
-            if (centerY < topThreshold || centerY > bottomThreshold) {
-                candidates.add(Pair(block, parsed))
+            // Check first line for header pattern: starts with number like "110 ELENA FERRANTE"
+            val firstLine = block.lines.firstOrNull()
+            if (firstLine != null) {
+                val lineY = firstLine.boundingBox.centerY()
+                if (lineY < topThreshold || lineY > bottomThreshold) {
+                    val lineText = firstLine.text.trim()
+                    val startMatch = "^(\\d{1,4})\\s+\\D".toRegex().find(lineText)
+                    if (startMatch != null) {
+                        val parsed = startMatch.groupValues[1].toIntOrNull()
+                        if (parsed != null && parsed in 1..9999) {
+                            headerCandidates.add(Pair(block, parsed))
+                            continue
+                        }
+                    }
+                }
+            }
+
+            // Check last line for pattern: ends with number like "The Guns of August 86"
+            val lastLine = block.lines.lastOrNull()
+            if (lastLine != null) {
+                val lineY = lastLine.boundingBox.centerY()
+                if (lineY < topThreshold || lineY > bottomThreshold) {
+                    val lineText = lastLine.text.trim()
+                    val endMatch = "\\D\\s+(\\d{1,4})$".toRegex().find(lineText)
+                    if (endMatch != null) {
+                        val parsed = endMatch.groupValues[1].toIntOrNull()
+                        if (parsed != null && parsed in 1..9999) {
+                            headerCandidates.add(Pair(block, parsed))
+                        }
+                    }
+                }
             }
         }
 
-        // If multiple candidates, prefer the one closest to the bottom (most common location)
-        return candidates.maxByOrNull { it.first.boundingBox.centerY() }
+        // Prefer standalone numbers, then header-embedded numbers
+        if (standaloneCandidates.isNotEmpty()) {
+            return standaloneCandidates.maxByOrNull { it.first.boundingBox.centerY() }
+        }
+        return headerCandidates.firstOrNull()
     }
 
     private fun filterFacingPage(blocks: List<OcrBlock>, imageWidth: Int): List<OcrBlock> {
