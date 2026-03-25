@@ -372,6 +372,11 @@ class BookSnapPipeline(
         result = result.replace("\u1EBF", "\u00E9") // ế -> é
         // Fix French: 'oœ' is OCR artifact for 'œ' (e.g. coœur -> cœur)
         result = result.replace("oœ", "œ")
+        // Fix French dropped apostrophes in common elisions
+        result = result.replace(Regex("\\bquil\\b"), "qu'il")
+        result = result.replace(Regex("\\bjen\\b"), "j'en")
+        result = result.replace(Regex("\\bjai\\b"), "j'ai")
+        result = result.replace(Regex("\\b[Cc]était\\b")) { "${it.value[0]}'était" }
         return result
     }
 

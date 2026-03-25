@@ -84,3 +84,4 @@ exp_083	2026-03-25T19:39:46.016826+00:00	0.035927	{}	yes	d955fc7862ff8a4b4ee7f1f
 exp_084	2026-03-25T19:42:12.851694+00:00	0.035867	{}	yes	79019733e64938f1d9ab7b5f674638825ec53c62	Fix en-dash patterns: comma-space-hyphen -> comma-space-en-dash (German/French), and hyphen at start of line -> en-dash (French dialogue). CER 0.03306 -> 0.03300.
 exp_085	2026-03-25T19:43:33.254443+00:00	0.035732	{}	yes	16581ceed23911e91919124d313b91defe5c409a	Fix German OCR error: 'fß' -> 'ß' (e.g. dafß -> daß, gewufßt -> gewußt). CER 0.03300 -> 0.03286.
 exp_086	2026-03-25T19:45:38.771210+00:00	0.035642	{}	yes	856e083aedb617fee99b9186b44c0765cba65fbe	Fix Vietnamese-style diacritics misapplied by OCR (ộ->ô, ả->ä, ế->é) and French 'oœ'->'œ' (coœur->cœur). CER 0.03286 -> 0.03277.
+exp_087	2026-03-25T19:49:07.568231+00:00	0.035537	{}	yes	6413f0453726f6bbbc8390e47257ba626b7270a7	Fix French dropped apostrophes: quil->qu'il, jen->j'en, jai->j'ai, Cétait->C'était. CER 0.03277 -> 0.03266.
