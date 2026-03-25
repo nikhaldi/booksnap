@@ -70,3 +70,13 @@ exp_069	2026-03-25T15:10:49.829800+00:00	0.037880	{}	no	reverted	English straigh
 exp_070	2026-03-25T15:12:39.250304+00:00	0.043924	{}	no	reverted	Unsharp mask sigma=2.0 was worse than sigma=3.0. CER regressed. Reverted.
 exp_071	2026-03-25T15:15:30.925009+00:00	0.036872	{}	yes	5c0e6d33d253cc773aa423ba927e4c58d43b1a22	Combined header prefix removal and page number extraction. Detects title-like header text before embedded page numbers, removes header from output, and uses the number. Page accuracy 79.4% -> 82.4%, CER 0.03431 -> 0.03402.
 exp_072	2026-03-25T15:19:27.842662+00:00	0.036137	{}	yes	a474c349a469ebda34c97786cc8924a37aa7fa3a	Wider header prefix detection (up to 55 chars, require 2+ words). Catches longer running headers like 'Debacle: Lorraine, Ardennes, Charlerol, Mons 267'. CER 0.03402 -> 0.03327.
+exp_073	2026-03-25T19:14:06.747503+00:00	0.049545	{}	no	reverted	Spell correction with edit-distance-1 was too aggressive, CER regressed from 0.033 to 0.047. Corrections are likely replacing valid words incorrectly.
+exp_074	2026-03-25T19:16:33.700921+00:00	0.043156	{}	no	reverted	Conservative spell correction (lowercase-only, same first letter) still regressed CER. Dictionaries likely too small, causing valid words to be incorrectly corrected.
+exp_075	2026-03-25T19:18:27.443120+00:00	0.036317	{}	no	reverted	Deletion-only spell correction was nearly neutral but slightly worse. Need more targeted approach.
+exp_076	2026-03-25T19:20:15.117905+00:00	0.039826	{}	no	reverted	Full edit-distance-1 with allWords filter still too aggressive. CER regressed 0.033 to 0.037.
+exp_077	2026-03-25T19:21:54.540397+00:00	0.036317	{}	no	reverted	Deletion-only with allWords check same as without. Still slightly worse than baseline.
+exp_078	2026-03-25T19:24:08.039264+00:00	0.036332	{}	no	reverted	Duplicate-char-only spell correction still slightly worse than baseline. Even most conservative approach doesn't help.
+exp_079	2026-03-25T19:29:40.441805+00:00	0.036302	{}	no	reverted	Deletion-only spell correction with length>=6 still slightly worse. False positives still outweigh true fixes.
+exp_080	2026-03-25T19:31:42.011808+00:00	0.040246	{}	no	reverted	OCR confusion-pair substitutions still too aggressive. CER regressed from 0.033 to 0.037.
+exp_081	2026-03-25T19:33:57.578876+00:00	0.037381	{}	no	reverted	Lowercased dictionary loading made spell correction worse - more false positives from enlarged candidate matches.
+exp_082	2026-03-25T19:34:53.861319+00:00	0.035972	{}	yes	caa129561268167f088a1a2103dd8e05948cf1ab	Fix OCR reading guillemets as angle brackets: < before uppercase -> «, trailing > -> ». Also remove duplicate » artifacts. CER 0.03327 -> 0.03310.

@@ -350,6 +350,12 @@ class BookSnapPipeline(
             .replace(Regex("(?<=\\s)>(?=\\s)"), "»")
         // Also handle << and >> patterns
         result = result.replace("<<", "«").replace(">>", "»")
+        // Fix < before uppercase letter (OCR reads « as <)
+        result = result.replace(Regex("<(\\p{Lu})")) { "«${it.groupValues[1]}" }
+        // Fix trailing > after punctuation or word (OCR reads » as >)
+        result = result.replace(Regex("(\\p{L}[.!?]?)>(?=[.\\s\n]|$)")) { "${it.groupValues[1]}»" }
+        // Remove duplicate » or > after »
+        result = result.replace(Regex("»[>»]+"), "»")
         return result
     }
 
