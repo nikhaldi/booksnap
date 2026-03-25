@@ -11,3 +11,6 @@ exp_009	2026-03-25T12:28:13.695610+00:00	0.069870	{}	yes	473150fdd1a98fba7c94530
 exp_010	2026-03-25T12:29:56.171873+00:00	0.060810	{}	yes	19c7e221789d0316f246fd23de868517b6a5fd1f	Join visual lines into paragraphs using Y-gap detection. CER 0.064 -> 0.055, WER 0.22 -> 0.13.
 exp_011	2026-03-25T12:32:05.745966+00:00	0.059970	{}	yes	4b886f6dba0f415e39dc44ee4b024358dd36d0c2	Detect paragraph breaks using short line width (lines ending before right margin). CER 0.055 -> 0.054.
 exp_012	2026-03-25T12:34:32.338715+00:00	0.059390	{}	yes	fc7f460ce75c3713861feb2b2d6d9a37f00badf1	Remove running header lines (short all-caps/title-case text with digits in margins) from output. CER 0.054 -> 0.053.
+exp_013	2026-03-25T12:35:32.618186+00:00	0.067430	{}	no	reverted	CLAHE contrast enhancement made OCR worse. CER regressed 0.053 -> 0.062. Reverting.
+exp_014	2026-03-25T12:36:58.970230+00:00	0.059390	{}	no	reverted	Don't break paragraphs after hyphenated lines. No score change - hyphen rejoin already handled it.
+exp_015	2026-03-25T12:37:53.253085+00:00	0.059300	{}	yes	6155d168760a9e60dcae89825a67d284951effd3	Fix OCR character substitutions: double hyphens to em dashes, angle brackets to guillemets. CER 0.0534 -> 0.0533.

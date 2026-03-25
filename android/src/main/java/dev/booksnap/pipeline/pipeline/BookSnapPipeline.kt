@@ -161,9 +161,18 @@ class BookSnapPipeline(
      */
     private fun rejoinHyphenatedWords(text: String): String {
         // Match a hyphen at end of line followed by a newline and lowercase letter
-        return text.replace(Regex("-\\n(\\p{Ll})")) { match ->
+        var result = text.replace(Regex("-\\n(\\p{Ll})")) { match ->
             match.groupValues[1]
         }
+        // Fix common OCR substitutions
+        result = result.replace("--", "—") // double hyphen to em dash
+        result = result.replace("«", "«").replace("»", "»") // already correct, skip
+        // Fix guillemets: < and > used as quote marks in French/German text
+        result = result.replace(Regex("(?<=\\s)<(?=\\s)"), "«")
+            .replace(Regex("(?<=\\s)>(?=\\s)"), "»")
+        // Also handle << and >> patterns
+        result = result.replace("<<", "«").replace(">>", "»")
+        return result
     }
 
     /**
