@@ -61,15 +61,31 @@ class BookSnapPipeline(
         // Sort by Y position for correct reading order
         val sortedLines = filteredLines.sortedBy { it.boundingBox.top }
 
-        // Remove any remaining page number text from lines
+        // Remove page number lines and running header lines from text
         val pageNum = pageNumberResult?.second
-        val cleanedLines = if (pageNum != null) {
-            sortedLines.filter { line ->
-                val trimmed = line.text.trim()
-                trimmed != pageNum.toString()
+        val imageHeight = bitmap.height
+        val marginTop = (imageHeight * 0.15).toInt()
+        val marginBottom = (imageHeight * 0.85).toInt()
+        val cleanedLines = sortedLines.filter { line ->
+            val trimmed = line.text.trim()
+            val lineY = line.boundingBox?.centerY() ?: (imageHeight / 2)
+            val inMargin = lineY < marginTop || lineY > marginBottom
+
+            // Remove standalone page number lines
+            if (pageNum != null && trimmed == pageNum.toString()) return@filter false
+
+            // Remove running header lines: short text in margins containing digits
+            // Headers typically have book title + page number, short overall
+            if (inMargin && trimmed.length < 40) {
+                val hasDigit = trimmed.any { it.isDigit() }
+                val isAllCapsOrTitle = trimmed.uppercase() == trimmed ||
+                    trimmed.split("\\s+".toRegex()).all { word ->
+                        word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
+                    }
+                if (hasDigit && isAllCapsOrTitle) return@filter false
             }
-        } else {
-            sortedLines
+
+            true
         }
 
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
