@@ -90,15 +90,18 @@ class BookSnapPipeline(
             // Remove standalone page number lines
             if (pageNum != null && trimmed == pageNum.toString()) return@filter false
 
-            // Remove running header lines: short text in margins containing digits
-            // Headers typically have book title + page number, short overall
-            if (inMargin && trimmed.length < 40) {
+            // Remove running header lines in margins
+            if (inMargin && trimmed.length < 50) {
                 val hasDigit = trimmed.any { it.isDigit() }
-                val isAllCapsOrTitle = trimmed.uppercase() == trimmed ||
-                    trimmed.split("\\s+".toRegex()).all { word ->
-                        word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
-                    }
-                if (hasDigit && isAllCapsOrTitle) return@filter false
+                val isAllCaps = trimmed.filter { it.isLetter() }.let { letters ->
+                    letters.isNotEmpty() && letters == letters.uppercase()
+                }
+                val isTitleCase = trimmed.split("\\s+".toRegex()).all { word ->
+                    word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
+                }
+                // Remove if: has digit + is all-caps/title-case, OR is short all-caps in top margin
+                if (hasDigit && (isAllCaps || isTitleCase)) return@filter false
+                if (isAllCaps && lineY < marginTop && trimmed.length < 30) return@filter false
             }
 
             true

@@ -21,3 +21,5 @@ exp_019	2026-03-25T12:42:38.279279+00:00	0.053390	{}	yes	c82f929dc196d89d6fbaacb
 exp_020	2026-03-25T12:44:19.971344+00:00	0.053420	{}	no	reverted	Widen page number margin to 25%. Page accuracy improved 64.7% -> 67.6% but CER slightly regressed. Net score slightly worse.
 exp_021	2026-03-25T12:45:28.469537+00:00	0.053490	{}	no	reverted	Regex to fix missing spaces between lowercase-uppercase was too aggressive, hurting German text with internal capitals. Reverted.
 exp_022	2026-03-25T12:47:02.998027+00:00	0.048480	{}	yes	608309f63b9b2364225725c5079fb87aefb27b2e	OpenCV deskew using Hough line detection. CER 0.047 -> 0.043, PageAcc 64.7% -> 67.6%. Latency 126ms -> 249ms (within budget).
+exp_023	2026-03-25T12:49:02.475540+00:00	0.048500	{}	no	reverted	Image sharpening (unsharp mask) didn't improve OCR quality. Slight regression. Reverted.
+exp_024	2026-03-25T12:50:39.911798+00:00	0.048260	{}	yes	eaadda0d924f5cc15dac7d1b762b314e9621ec92	Remove all-caps running header lines in top margin (e.g. 'L'AMICA GENIALE'). CER 0.043 -> 0.043.
