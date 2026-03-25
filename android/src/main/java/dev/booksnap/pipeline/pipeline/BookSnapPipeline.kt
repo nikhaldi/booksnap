@@ -185,6 +185,18 @@ class BookSnapPipeline(
         // 2. The previous line is "short" (doesn't fill the full column width)
         val paragraphGapThreshold = medianHeight * 0.8
 
+        // Calculate left margin for indentation detection
+        val leftEdges = lines.mapNotNull { it.boundingBox?.left }
+        val sortedLeftEdges = leftEdges.sorted()
+        // Use 25th percentile as the base left margin (most lines start here)
+        val baseLeftMargin = if (sortedLeftEdges.size >= 4) {
+            sortedLeftEdges[sortedLeftEdges.size / 4]
+        } else {
+            sortedLeftEdges.firstOrNull() ?: 0
+        }
+        // Indentation threshold: line starts more than 1.5x median height to the right of base
+        val indentThreshold = baseLeftMargin + (medianHeight * 1.5).toInt()
+
         val result = StringBuilder()
         result.append(lines[0].text)
 
@@ -207,8 +219,12 @@ class BookSnapPipeline(
                 currText.startsWith("\u2018") || // '
                 currText.startsWith("\u00BB")    // » (used as opening quote in German)
 
+            // Detect indentation (new paragraph starts indented)
+            val currLeft = lines[i].boundingBox?.left ?: baseLeftMargin
+            val isIndented = currLeft > indentThreshold && endsWithPunctuation
+
             if (gap > paragraphGapThreshold || (prevIsShort && endsWithPunctuation) ||
-                (startsWithQuote && endsWithPunctuation)) {
+                (startsWithQuote && endsWithPunctuation) || isIndented) {
                 result.append("\n")
             } else if (prevText.endsWith("-")) {
                 // Don't add space - the hyphen rejoin will handle this
