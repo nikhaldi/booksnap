@@ -232,7 +232,9 @@ class BookSnapPipeline(
             match.groupValues[1]
         }
         // Fix common OCR substitutions
-        result = result.replace("--", "—") // double hyphen to em dash
+        result = result.replace("--", "\u2014") // double hyphen to em dash
+        // Space-hyphen-space between words is typically an em dash
+        result = result.replace(Regex("(?<=\\w) - (?=\\w)"), " \u2014 ")
         result = result.replace("«", "«").replace("»", "»") // already correct, skip
         // Fix guillemets: < and > used as quote marks in French/German text
         result = result.replace(Regex("(?<=\\s)<(?=\\s)"), "«")
