@@ -52,10 +52,11 @@ class BookSnapPipeline(
             filtered
         }
 
-        // Sort blocks top-to-bottom by their bounding box top edge
-        val sorted = textBlocks.sortedBy { it.boundingBox.top }
+        // Extract all lines from all blocks and sort by Y position for correct reading order
+        val allLines = textBlocks.flatMap { it.lines }
+            .sortedBy { it.boundingBox.top }
 
-        val text = sorted.joinToString("\n") { it.text }
+        val text = allLines.joinToString("\n") { it.text }
         return PageResult(
             text = text,
             pageNumber = pageNumberResult?.second
