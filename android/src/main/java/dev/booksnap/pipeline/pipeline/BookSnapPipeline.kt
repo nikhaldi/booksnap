@@ -48,14 +48,17 @@ class BookSnapPipeline(
         // Run OCR on original (deskewed) image for page number extraction
         val origBlocks = engine.recognize(deskewed)
 
-        // Extract page number from original (unfiltered) OCR
-        val pageNumberResult = if (origBlocks.isNotEmpty()) {
-            extractPageNumber(origBlocks, bitmap.height)
-        } else null
-
         // Run OCR on denoised image for text content
         val denoised = denoiseImage(deskewed)
         val blocks = engine.recognize(denoised)
+
+        // Extract page number from original OCR first, fallback to denoised OCR
+        val pageNumberResult = (if (origBlocks.isNotEmpty()) {
+            extractPageNumber(origBlocks, bitmap.height)
+        } else null) ?: (if (blocks.isNotEmpty()) {
+            extractPageNumber(blocks, bitmap.height)
+        } else null)
+
         if (blocks.isEmpty()) return PageResult(text = "", pageNumber = pageNumberResult?.pageNum)
 
         // Filter out facing-page text by keeping only blocks from the dominant side

@@ -47,3 +47,4 @@ exp_046	2026-03-25T13:33:01.780472+00:00	0.044820	{}	no	reverted	Tuning sharpeni
 exp_047	2026-03-25T13:34:15.071086+00:00	0.045410	{}	no	reverted	Tried different Gaussian blur sigmas for sharpening (2.0 and 4.0). Sigma=3.0 is optimal. Reverted.
 exp_048	2026-03-25T13:40:52.785142+00:00	0.291750	{}	no	reverted	Vertical facing-page filter incorrectly splits single-page images on paragraph gaps. Massive regression. Reverted.
 exp_049	2026-03-25T14:33:46.622350+00:00	0.040563	{}	yes	a484a4b96b7160ef80321a0afc992da8f9156e16	Only break paragraphs on short lines that end with sentence-ending punctuation. Prevents false paragraph breaks from truncated lines near book spine. Score 0.04121 -> 0.04056.
+exp_050	2026-03-25T14:36:20.223994+00:00	0.039974	{}	yes	be379504c8a6d341cd3e7cee3ee453f26bbb58f4	Search both original and denoised OCR results for page numbers (fallback). Page accuracy 67.6% -> 70.6%. Score 0.04056 -> 0.03997.
