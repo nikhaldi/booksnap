@@ -52,11 +52,16 @@ class BookSnapPipeline(
             filtered
         }
 
-        // Extract all lines from all blocks and sort by Y position for correct reading order
+        // Extract all lines from all blocks
         val allLines = textBlocks.flatMap { it.lines }
-            .sortedBy { it.boundingBox.top }
 
-        val text = allLines.joinToString("\n") { it.text }
+        // Filter facing-page bleed at line level
+        val filteredLines = filterFacingPageLines(allLines, bitmap.width)
+
+        // Sort by Y position for correct reading order
+        val sortedLines = filteredLines.sortedBy { it.boundingBox.top }
+
+        val text = sortedLines.joinToString("\n") { it.text }
         return PageResult(
             text = text,
             pageNumber = pageNumberResult?.second
@@ -136,6 +141,45 @@ class BookSnapPipeline(
             return standaloneCandidates.maxByOrNull { it.first.boundingBox.centerY() }
         }
         return headerCandidates.firstOrNull()
+    }
+
+    private fun filterFacingPageLines(lines: List<OcrLine>, imageWidth: Int): List<OcrLine> {
+        if (lines.size <= 1) return lines
+
+        data class LineInfo(val line: OcrLine, val centerX: Int, val textLen: Int)
+        val infos = lines.map { line ->
+            LineInfo(line, line.boundingBox.centerX(), line.text.length)
+        }
+
+        // Find the spine using the largest gap in line center X positions
+        val sortedByX = infos.sortedBy { it.centerX }
+        var bestGapPos = imageWidth / 2
+        var bestGapSize = 0
+        for (i in 0 until sortedByX.size - 1) {
+            val gap = sortedByX[i + 1].centerX - sortedByX[i].centerX
+            if (gap > bestGapSize) {
+                bestGapSize = gap
+                bestGapPos = (sortedByX[i].centerX + sortedByX[i + 1].centerX) / 2
+            }
+        }
+
+        // Only split if the gap is significant (>8% of image width)
+        if (bestGapSize < imageWidth * 0.08) {
+            return lines
+        }
+
+        // Keep the side with more total text
+        var leftLen = 0
+        var rightLen = 0
+        for (info in infos) {
+            if (info.centerX < bestGapPos) leftLen += info.textLen
+            else rightLen += info.textLen
+        }
+
+        val keepLeft = leftLen > rightLen
+        return infos.filter { info ->
+            if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
+        }.map { it.line }
     }
 
     private fun filterFacingPage(blocks: List<OcrBlock>, imageWidth: Int): List<OcrBlock> {

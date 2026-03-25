@@ -4,3 +4,4 @@ exp_002	2026-03-25T12:03:13.929566+00:00	0.148899	{}	yes	d0ad763aab58e7416f6117e
 exp_003	2026-03-25T12:08:27.278834+00:00	0.141270	{}	yes	b6ec51d1fe653ad8b06057aad49e1d7acb4137cb	Add page number extraction from top/bottom margins. Page number accuracy 0% -> 35.3%, CER slightly improved.
 exp_004	2026-03-25T12:09:47.718768+00:00	0.084010	{}	yes	d4ce2488a96eb97e0dc81a0bcb3d7b817d469015	Sort text at individual line level instead of block level for correct reading order. CER 0.131 -> 0.073.
 exp_005	2026-03-25T12:11:25.183071+00:00	0.081600	{}	yes	c5d442d6708673a528c436708097296f48c85b4b	Improved page number extraction to detect header-embedded page numbers (e.g. '110 ELENA FERRANTE'). Page accuracy 35.3% -> 44.1%.
+exp_006	2026-03-25T12:12:51.813535+00:00	0.077880	{}	yes	0d1e19fa3177e57a4a37a7ce0a55f1aea5ede926	Add line-level facing-page filtering using gap detection between line centers. CER 0.072 -> 0.068.
