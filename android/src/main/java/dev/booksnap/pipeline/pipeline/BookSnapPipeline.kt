@@ -99,9 +99,9 @@ class BookSnapPipeline(
                 val isTitleCase = trimmed.split("\\s+".toRegex()).all { word ->
                     word.firstOrNull()?.isUpperCase() == true || word.all { !it.isLetter() }
                 }
-                // Remove if: has digit + is all-caps/title-case, OR is short all-caps in top margin
+                // Remove if: has digit + is all-caps/title-case, OR short all-caps/title-case in top margin
                 if (hasDigit && (isAllCaps || isTitleCase)) return@filter false
-                if (isAllCaps && lineY < marginTop && trimmed.length < 30) return@filter false
+                if ((isAllCaps || isTitleCase) && lineY < marginTop && trimmed.length < 35) return@filter false
             }
 
             true
