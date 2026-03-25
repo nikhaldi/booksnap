@@ -42,11 +42,59 @@ class BookSnapPipeline(
         // Filter out facing-page text by keeping only blocks from the dominant side
         val filtered = filterFacingPage(blocks, bitmap.width)
 
+        // Extract page number from blocks near top or bottom margins
+        val pageNumberResult = extractPageNumber(filtered, bitmap.height)
+
+        // Remove page number block from text blocks
+        val textBlocks = if (pageNumberResult != null) {
+            filtered.filter { it !== pageNumberResult.first }
+        } else {
+            filtered
+        }
+
         // Sort blocks top-to-bottom by their bounding box top edge
-        val sorted = filtered.sortedBy { it.boundingBox.top }
+        val sorted = textBlocks.sortedBy { it.boundingBox.top }
 
         val text = sorted.joinToString("\n") { it.text }
-        return PageResult(text = text)
+        return PageResult(
+            text = text,
+            pageNumber = pageNumberResult?.second
+        )
+    }
+
+    /**
+     * Look for a page number: a small block near the top or bottom margin containing just a number.
+     * Returns the block and parsed page number, or null.
+     */
+    private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): Pair<OcrBlock, Int>? {
+        val marginFraction = 0.15 // top/bottom 15% of image
+        val topThreshold = (imageHeight * marginFraction).toInt()
+        val bottomThreshold = (imageHeight * (1.0 - marginFraction)).toInt()
+
+        val candidates = mutableListOf<Pair<OcrBlock, Int>>()
+
+        for (block in blocks) {
+            val box = block.boundingBox
+            val text = block.text.trim()
+
+            // Page numbers are typically short numeric strings
+            val num = text.replace("[^0-9]".toRegex(), "")
+            if (num.isEmpty()) continue
+            // The text should be mostly numeric (allow some OCR noise)
+            if (num.length < text.length * 0.5) continue
+            // Page numbers are typically 1-4 digits
+            val parsed = num.toIntOrNull() ?: continue
+            if (parsed < 1 || parsed > 9999) continue
+
+            // Must be in top or bottom margin
+            val centerY = box.centerY()
+            if (centerY < topThreshold || centerY > bottomThreshold) {
+                candidates.add(Pair(block, parsed))
+            }
+        }
+
+        // If multiple candidates, prefer the one closest to the bottom (most common location)
+        return candidates.maxByOrNull { it.first.boundingBox.centerY() }
     }
 
     private fun filterFacingPage(blocks: List<OcrBlock>, imageWidth: Int): List<OcrBlock> {
