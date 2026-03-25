@@ -44,8 +44,9 @@ class BookSnapPipeline(
             ?: return PageResult(text = "")
         val bitmap = applyExifRotation(imagePath, rawBitmap)
         val deskewed = deskewImage(bitmap)
+        val denoised = denoiseImage(deskewed)
 
-        val blocks = engine.recognize(deskewed)
+        val blocks = engine.recognize(denoised)
         if (blocks.isEmpty()) return PageResult(text = "")
 
         // Extract page number from ALL blocks before any filtering
@@ -353,6 +354,27 @@ class BookSnapPipeline(
         return infos.filter { info ->
             if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos
         }.map { it.block }
+    }
+
+    private fun denoiseImage(bitmap: Bitmap): Bitmap {
+        val mat = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+        // Convert RGBA to BGR for bilateral filter
+        val bgr = Mat()
+        Imgproc.cvtColor(mat, bgr, Imgproc.COLOR_RGBA2BGR)
+        val filtered = Mat()
+        // Bilateral filter: preserves edges while smoothing noise
+        Imgproc.bilateralFilter(bgr, filtered, 9, 75.0, 75.0)
+        // Convert back to RGBA
+        val rgba = Mat()
+        Imgproc.cvtColor(filtered, rgba, Imgproc.COLOR_BGR2RGBA)
+        val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(rgba, result)
+        mat.release()
+        bgr.release()
+        filtered.release()
+        rgba.release()
+        return result
     }
 
     private fun deskewImage(bitmap: Bitmap): Bitmap {
