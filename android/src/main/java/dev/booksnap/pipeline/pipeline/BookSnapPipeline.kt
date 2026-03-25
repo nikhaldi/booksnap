@@ -364,6 +364,14 @@ class BookSnapPipeline(
         result = result.replace("|", "")
         // Fix German OCR: 'fß' is commonly misread for 'ß' (e.g. dafß -> daß)
         result = result.replace("fß", "ß")
+        // Fix Vietnamese-style diacritics misapplied to European text
+        result = result.replace("\u1ED9", "\u00F4") // ộ -> ô
+        result = result.replace("\u1ED3", "\u00F4") // ồ -> ô
+        result = result.replace("\u1EA3", "\u00E4") // ả -> ä
+        result = result.replace("\u1EA2", "\u00C4") // Ả -> Ä
+        result = result.replace("\u1EBF", "\u00E9") // ế -> é
+        // Fix French: 'oœ' is OCR artifact for 'œ' (e.g. coœur -> cœur)
+        result = result.replace("oœ", "œ")
         return result
     }
 
