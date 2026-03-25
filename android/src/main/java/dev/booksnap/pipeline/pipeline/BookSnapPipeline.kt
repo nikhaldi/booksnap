@@ -109,9 +109,16 @@ class BookSnapPipeline(
             if (it.size >= 3) it[it.size / 2] else 100
         }
 
+        // Find the top Y of the first substantial body text line
+        // Short lines ABOVE this are headers; short lines BELOW are body text
+        val firstBodyLineTop = sortedLines
+            .firstOrNull { it.text.length >= medianTextLen * 0.5 }
+            ?.boundingBox?.top ?: 0
+
         val cleanedLines = sortedLines.filter { line ->
             val trimmed = line.text.trim()
             val lineY = line.boundingBox.centerY()
+            val lineTop = line.boundingBox.top
             val inMargin = lineY < marginTop || lineY > marginBottom
 
             // Remove standalone page number lines
@@ -130,7 +137,8 @@ class BookSnapPipeline(
                 if (hasDigit && (isAllCaps || isTitleCase)) return@filter false
                 if ((isAllCaps || isTitleCase) && lineY < marginTop && trimmed.length < 35) return@filter false
                 // Remove short header-like lines in top margin that are much shorter than body text
-                if (lineY < marginTop && trimmed.length < medianTextLen * 0.5 && trimmed.length < 40) {
+                // Only remove if the line is AT or ABOVE the first substantial body text line
+                if (lineY < marginTop && lineTop <= firstBodyLineTop && trimmed.length < medianTextLen * 0.5 && trimmed.length < 40) {
                     return@filter false
                 }
                 // Remove short noise lines in bottom margin that are much shorter than body text
