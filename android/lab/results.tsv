@@ -60,3 +60,5 @@ exp_059	2026-03-25T14:51:21.061628+00:00	0.038270	{}	no	reverted	Removing period
 exp_060	2026-03-25T14:52:16.339771+00:00	0.037955	{}	yes	f01034350b0f1a4870da8197a77c8347fce0585c	Fix missing apostrophes in common English contractions (dont -> don't, etc.). CER 0.03456 -> 0.03453.
 exp_061	2026-03-25T14:53:42.726674+00:00	0.045436	{}	no	reverted	Gentle CLAHE on luminance channel (clip=1.5, tile=8x8) badly hurts ML Kit OCR. CER 0.035 -> 0.043. Even conservative CLAHE degrades text recognition. Reverted.
 exp_062	2026-03-25T14:56:43.439123+00:00	0.037850	{}	yes	242ed0befedd9ff9f24e6eacea3b7809872b190d	Split paragraphs at dialogue boundaries: after closing guillemets/quotes before uppercase, and before opening guillemets/quotes after colon. CER 0.03453 -> 0.03442.
+exp_063	2026-03-25T15:00:18.206314+00:00	0.037850	{}	no	reverted	Adaptive paragraph gap threshold (median gap + 0.5× height) instead of fixed 0.8× height. No improvement. Reverted.
+exp_064	2026-03-25T15:01:56.636124+00:00	0.037805	{}	yes	b040e554d9674c1ded712e568a15ca4d1f6626ab	Widen page number search margin from 20% to 25%. CER 0.03442 -> 0.03437. Score 0.03785 -> 0.03780.

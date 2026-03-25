@@ -208,7 +208,7 @@ class BookSnapPipeline(
         val paragraphGapThreshold = medianHeight * 0.8
 
         // Calculate left margin for indentation detection
-        val leftEdges = lines.mapNotNull { it.boundingBox?.left }
+        val leftEdges = lines.map { it.boundingBox.left }
         val sortedLeftEdges = leftEdges.sorted()
         // Use 25th percentile as the base left margin (most lines start here)
         val baseLeftMargin = if (sortedLeftEdges.size >= 4) {
@@ -242,7 +242,7 @@ class BookSnapPipeline(
                 currText.startsWith("\u00BB")    // » (used as opening quote in German)
 
             // Detect indentation (new paragraph starts indented)
-            val currLeft = lines[i].boundingBox?.left ?: baseLeftMargin
+            val currLeft = lines[i].boundingBox.left
             val isIndented = currLeft > indentThreshold && endsWithPunctuation
 
             if (gap > paragraphGapThreshold || (prevIsShort && endsWithPunctuation) ||
@@ -331,7 +331,7 @@ class BookSnapPipeline(
     private data class PageNumberResult(val block: OcrBlock, val line: OcrLine, val pageNum: Int)
 
     private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): PageNumberResult? {
-        val marginFraction = 0.20 // top/bottom 20% of image
+        val marginFraction = 0.25 // top/bottom 25% of image
         val topThreshold = (imageHeight * marginFraction).toInt()
         val bottomThreshold = (imageHeight * (1.0 - marginFraction)).toInt()
 
