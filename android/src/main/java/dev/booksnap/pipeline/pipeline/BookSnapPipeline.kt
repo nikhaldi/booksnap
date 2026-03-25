@@ -43,7 +43,7 @@ class BookSnapPipeline(
         val rawBitmap = BitmapFactory.decodeFile(imagePath)
             ?: return PageResult(text = "")
         val bitmap = applyExifRotation(imagePath, rawBitmap)
-        val deskewed = deskewImage(bitmap)
+        val (deskewed, deskewAngle) = deskewImage(bitmap)
 
         // Run OCR on original (deskewed) image for page number extraction
         val origBlocks = engine.recognize(deskewed)
@@ -56,7 +56,7 @@ class BookSnapPipeline(
         // Run OCR on denoised image for text content
         val denoised = denoiseImage(deskewed)
         val blocks = engine.recognize(denoised)
-        if (blocks.isEmpty()) return PageResult(text = "", pageNumber = pageNumberResult?.second)
+        if (blocks.isEmpty()) return PageResult(text = "", pageNumber = pageNumberResult?.pageNum)
 
         // Filter out facing-page text by keeping only blocks from the dominant side
         val filtered = filterFacingPage(blocks, bitmap.width)
@@ -82,7 +82,7 @@ class BookSnapPipeline(
         val sortedLines = denoised.sortedBy { it.boundingBox.top }
 
         // Remove page number lines and running header lines from text
-        val pageNum = pageNumberResult?.second
+        val pageNum = pageNumberResult?.pageNum
         val imageHeight = bitmap.height
         val marginTop = (imageHeight * 0.15).toInt()
         val marginBottom = (imageHeight * 0.85).toInt()
@@ -127,9 +127,22 @@ class BookSnapPipeline(
 
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
         val text = rejoinHyphenatedWords(paragraphs)
+
+        // Compute text bounds as union of all cleaned line bounding boxes
+        val rawTextBounds = computeUnionBounds(cleanedLines.map { it.boundingBox })
+        val textBounds = undeskewBounds(rawTextBounds, deskewAngle, bitmap.width, bitmap.height)
+
+        // Compute page number bounds from the matched line
+        val pageNumberBounds = pageNumberResult?.line?.boundingBox?.let {
+            val raw = BoundingBox(it.left, it.top, it.width(), it.height())
+            undeskewBounds(raw, deskewAngle, bitmap.width, bitmap.height)
+        }
+
         return PageResult(
             text = text,
-            pageNumber = pageNum
+            textBounds = textBounds,
+            pageNumber = pageNum,
+            pageNumberBounds = pageNumberBounds,
         )
     }
 
@@ -217,13 +230,15 @@ class BookSnapPipeline(
      * Handles both standalone numbers and header lines like "110 ELENA FERRANTE" or "86 The Guns of August".
      * Returns the block and parsed page number, or null.
      */
-    private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): Pair<OcrBlock, Int>? {
+    private data class PageNumberResult(val block: OcrBlock, val line: OcrLine, val pageNum: Int)
+
+    private fun extractPageNumber(blocks: List<OcrBlock>, imageHeight: Int): PageNumberResult? {
         val marginFraction = 0.20 // top/bottom 20% of image
         val topThreshold = (imageHeight * marginFraction).toInt()
         val bottomThreshold = (imageHeight * (1.0 - marginFraction)).toInt()
 
         // Scan all individual lines across all blocks
-        data class Candidate(val block: OcrBlock, val pageNum: Int, val priority: Int, val lineY: Int)
+        data class Candidate(val block: OcrBlock, val line: OcrLine, val pageNum: Int, val priority: Int, val lineY: Int)
         val candidates = mutableListOf<Candidate>()
 
         for (block in blocks) {
@@ -239,7 +254,7 @@ class BookSnapPipeline(
                 if (justNum.isNotEmpty() && justNum.length >= lineText.length * 0.6) {
                     val parsed = justNum.toIntOrNull()
                     if (parsed != null && parsed in 1..9999) {
-                        candidates.add(Candidate(block, parsed, 1, lineY))
+                        candidates.add(Candidate(block, line, parsed, 1, lineY))
                         continue
                     }
                 }
@@ -249,7 +264,7 @@ class BookSnapPipeline(
                 if (startMatch != null) {
                     val parsed = startMatch.groupValues[1].toIntOrNull()
                     if (parsed != null && parsed in 1..9999) {
-                        candidates.add(Candidate(block, parsed, 2, lineY))
+                        candidates.add(Candidate(block, line, parsed, 2, lineY))
                         continue
                     }
                 }
@@ -259,7 +274,7 @@ class BookSnapPipeline(
                 if (endMatch != null) {
                     val parsed = endMatch.groupValues[1].toIntOrNull()
                     if (parsed != null && parsed in 1..9999) {
-                        candidates.add(Candidate(block, parsed, 3, lineY))
+                        candidates.add(Candidate(block, line, parsed, 3, lineY))
                     }
                 }
             }
@@ -269,7 +284,7 @@ class BookSnapPipeline(
 
         // Sort by priority (lower is better), then prefer bottom of page
         val best = candidates.sortedWith(compareBy<Candidate> { it.priority }.thenByDescending { it.lineY }).first()
-        return Pair(best.block, best.pageNum)
+        return PageNumberResult(best.block, best.line, best.pageNum)
     }
 
     private fun filterFacingPageLines(lines: List<OcrLine>, imageWidth: Int): List<OcrLine> {
@@ -387,7 +402,9 @@ class BookSnapPipeline(
         return result
     }
 
-    private fun deskewImage(bitmap: Bitmap): Bitmap {
+    private data class DeskewResult(val bitmap: Bitmap, val angleDegrees: Double)
+
+    private fun deskewImage(bitmap: Bitmap): DeskewResult {
         val mat = Mat()
         Utils.bitmapToMat(bitmap, mat)
 
@@ -408,7 +425,7 @@ class BookSnapPipeline(
             edges.release()
             lines.release()
             mat.release()
-            return bitmap
+            return DeskewResult(bitmap, 0.0)
         }
 
         // Calculate median angle of near-horizontal lines
@@ -430,7 +447,7 @@ class BookSnapPipeline(
 
         if (angles.isEmpty()) {
             mat.release()
-            return bitmap
+            return DeskewResult(bitmap, 0.0)
         }
 
         val sortedAngles = angles.sorted()
@@ -439,7 +456,7 @@ class BookSnapPipeline(
         // Only deskew if angle is small but noticeable
         if (Math.abs(medianAngle) < 0.3 || Math.abs(medianAngle) > 10) {
             mat.release()
-            return bitmap
+            return DeskewResult(bitmap, 0.0)
         }
 
         // Rotate to correct skew
@@ -456,7 +473,58 @@ class BookSnapPipeline(
         rotMat.release()
         rotated.release()
 
-        return result
+        return DeskewResult(result, medianAngle)
+    }
+
+    /**
+     * Map a bounding box from deskewed image coordinates back to original image coordinates
+     * by applying the inverse rotation around the image center.
+     */
+    private fun undeskewBounds(bounds: BoundingBox, angleDegrees: Double, imageWidth: Int, imageHeight: Int): BoundingBox {
+        if (angleDegrees == 0.0) return bounds
+        val cx = imageWidth / 2.0
+        val cy = imageHeight / 2.0
+        val rad = Math.toRadians(-angleDegrees) // reverse: rotate back by negating the deskew angle
+        val cos = Math.cos(rad)
+        val sin = Math.sin(rad)
+
+        // Rotate the four corners of the bounding box
+        val corners = listOf(
+            bounds.x.toDouble() to bounds.y.toDouble(),
+            (bounds.x + bounds.width).toDouble() to bounds.y.toDouble(),
+            (bounds.x + bounds.width).toDouble() to (bounds.y + bounds.height).toDouble(),
+            bounds.x.toDouble() to (bounds.y + bounds.height).toDouble(),
+        )
+        var minX = Double.MAX_VALUE
+        var minY = Double.MAX_VALUE
+        var maxX = Double.MIN_VALUE
+        var maxY = Double.MIN_VALUE
+        for ((px, py) in corners) {
+            val dx = px - cx
+            val dy = py - cy
+            val rx = cos * dx + sin * dy + cx
+            val ry = -sin * dx + cos * dy + cy
+            if (rx < minX) minX = rx
+            if (ry < minY) minY = ry
+            if (rx > maxX) maxX = rx
+            if (ry > maxY) maxY = ry
+        }
+        return BoundingBox(minX.toInt(), minY.toInt(), (maxX - minX).toInt(), (maxY - minY).toInt())
+    }
+
+    private fun computeUnionBounds(rects: List<android.graphics.Rect>): BoundingBox {
+        if (rects.isEmpty()) return BoundingBox(0, 0, 0, 0)
+        var minX = Int.MAX_VALUE
+        var minY = Int.MAX_VALUE
+        var maxX = Int.MIN_VALUE
+        var maxY = Int.MIN_VALUE
+        for (r in rects) {
+            if (r.left < minX) minX = r.left
+            if (r.top < minY) minY = r.top
+            if (r.right > maxX) maxX = r.right
+            if (r.bottom > maxY) maxY = r.bottom
+        }
+        return BoundingBox(minX, minY, maxX - minX, maxY - minY)
     }
 
     private fun applyExifRotation(path: String, bitmap: Bitmap): Bitmap {
