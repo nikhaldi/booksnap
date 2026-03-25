@@ -141,12 +141,33 @@ class BookSnapPipeline(
             undeskewBounds(raw, deskewAngle, bitmap.width, bitmap.height)
         }
 
+        // Final fallback: extract page number from the assembled text itself
+        val finalPageNum = pageNum ?: extractPageNumberFromText(text)
+
         return PageResult(
             text = text,
             textBounds = textBounds,
-            pageNumber = pageNum,
+            pageNumber = finalPageNum,
             pageNumberBounds = pageNumberBounds,
         )
+    }
+
+    /**
+     * Try to extract a page number from the end of the assembled text.
+     * Looks for a standalone number on the last line.
+     */
+    private fun extractPageNumberFromText(text: String): Int? {
+        val lines = text.trimEnd().split("\n")
+        if (lines.isEmpty()) return null
+        // Check last line for standalone number
+        val lastLine = lines.last().trim()
+        val num = lastLine.toIntOrNull()
+        if (num != null && num in 1..9999) return num
+        // Check first line for standalone number
+        val firstLine = lines.first().trim()
+        val firstNum = firstLine.toIntOrNull()
+        if (firstNum != null && firstNum in 1..9999) return firstNum
+        return null
     }
 
     /**
