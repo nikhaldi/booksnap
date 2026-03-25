@@ -368,14 +368,21 @@ class BookSnapPipeline(
         val filtered = Mat()
         // Bilateral filter: preserves edges while smoothing noise
         Imgproc.bilateralFilter(bgr, filtered, 11, 100.0, 100.0)
+        // Apply mild unsharp mask to enhance text edges after smoothing
+        val blurred = Mat()
+        Imgproc.GaussianBlur(filtered, blurred, Size(0.0, 0.0), 3.0)
+        val sharpened = Mat()
+        Core.addWeighted(filtered, 1.5, blurred, -0.5, 0.0, sharpened)
+        blurred.release()
+        filtered.release()
         // Convert back to RGBA
         val rgba = Mat()
-        Imgproc.cvtColor(filtered, rgba, Imgproc.COLOR_BGR2RGBA)
+        Imgproc.cvtColor(sharpened, rgba, Imgproc.COLOR_BGR2RGBA)
         val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
         Utils.matToBitmap(rgba, result)
         mat.release()
         bgr.release()
-        filtered.release()
+        sharpened.release()
         rgba.release()
         return result
     }

@@ -41,3 +41,5 @@ exp_040	2026-03-25T13:21:26.526219+00:00	0.045930	{}	no	reverted	Short-line para
 exp_041	2026-03-25T13:25:55.333607+00:00	0.044820	{}	yes	e8eee1c49ed97886a4538452d9fc2eef14af46a3	Dual OCR: original image for page numbers, denoised image for text. Recovers page accuracy (58.8% -> 67.6%) while keeping denoised CER benefit. Score 0.04585 -> 0.04482.
 exp_042	2026-03-25T13:28:01.196905+00:00	0.045410	{}	no	reverted	OCR digit correction for page numbers was too aggressive, causing false matches. Reverted.
 exp_043	2026-03-25T13:28:57.662828+00:00	0.044040	{}	yes	cadcfc4b071d97b4ade0df069567a0af2b22cf49	Stronger bilateral filter (d=11, sigma=100). CER 0.039 -> 0.038. Score 0.04482 -> 0.04404. Latency 462ms.
+exp_044	2026-03-25T13:29:42.910570+00:00	0.045900	{}	no	reverted	Even stronger bilateral filter (d=13, sigma=120) was worse - over-smoothing hurts OCR. Reverted to d=11/sigma=100.
+exp_045	2026-03-25T13:31:49.441364+00:00	0.041210	{}	yes	e7bf9dd24a1d2c76ca7e1b3a9f19acf226210e9a	Add unsharp mask after bilateral filter (1.5x sharp - 0.5x blur). CER 0.038 -> 0.035. Score 0.04404 -> 0.04121.
