@@ -356,6 +356,8 @@ class BookSnapPipeline(
         result = result.replace(Regex("(\\p{L}[.!?]?)>(?=[.\\s\n]|$)")) { "${it.groupValues[1]}»" }
         // Remove duplicate » or > after »
         result = result.replace(Regex("»[>»]+"), "»")
+        // Remove pipe characters (OCR noise, never appears in book text)
+        result = result.replace("|", "")
         return result
     }
 

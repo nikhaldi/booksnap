@@ -80,3 +80,4 @@ exp_079	2026-03-25T19:29:40.441805+00:00	0.036302	{}	no	reverted	Deletion-only s
 exp_080	2026-03-25T19:31:42.011808+00:00	0.040246	{}	no	reverted	OCR confusion-pair substitutions still too aggressive. CER regressed from 0.033 to 0.037.
 exp_081	2026-03-25T19:33:57.578876+00:00	0.037381	{}	no	reverted	Lowercased dictionary loading made spell correction worse - more false positives from enlarged candidate matches.
 exp_082	2026-03-25T19:34:53.861319+00:00	0.035972	{}	yes	caa129561268167f088a1a2103dd8e05948cf1ab	Fix OCR reading guillemets as angle brackets: < before uppercase -> «, trailing > -> ». Also remove duplicate » artifacts. CER 0.03327 -> 0.03310.
+exp_083	2026-03-25T19:39:46.016826+00:00	0.035927	{}	yes	d955fc7862ff8a4b4ee7f1fc81aa1804a4c2ba7e	Remove pipe characters from OCR output (OCR noise). CER 0.03310 -> 0.03306.
