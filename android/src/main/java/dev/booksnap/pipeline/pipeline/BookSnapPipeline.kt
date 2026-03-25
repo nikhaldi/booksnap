@@ -766,9 +766,13 @@ class BookSnapPipeline(
             if (c.length >= 4 && checker.spell(c)) candidates.add(c)
         }
 
-        // Substitutions (a-z only)
+        // Build substitution alphabet: a-z + common accented chars
+        val extraChars = "àáâãäåæçèéêëìîïñòóôõöùúûüýÿœß"
+        val alphabet = ('a'..'z').toList() + extraChars.toList()
+
+        // Substitutions
         for (j in lower.indices) {
-            for (ch in 'a'..'z') {
+            for (ch in alphabet) {
                 if (ch != lower[j]) {
                     val c = lower.substring(0, j) + ch + lower.substring(j + 1)
                     if (checker.spell(c)) candidates.add(c)
@@ -778,7 +782,7 @@ class BookSnapPipeline(
 
         // Insertions (add one character)
         for (j in 0..lower.length) {
-            for (ch in 'a'..'z') {
+            for (ch in alphabet) {
                 val c = lower.substring(0, j) + ch + lower.substring(j)
                 if (checker.spell(c)) candidates.add(c)
             }
