@@ -61,11 +61,23 @@ class BookSnapPipeline(
         // Sort by Y position for correct reading order
         val sortedLines = filteredLines.sortedBy { it.boundingBox.top }
 
-        val text = sortedLines.joinToString("\n") { it.text }
+        val rawText = sortedLines.joinToString("\n") { it.text }
+        val text = rejoinHyphenatedWords(rawText)
         return PageResult(
             text = text,
             pageNumber = pageNumberResult?.second
         )
+    }
+
+    /**
+     * Rejoin words that were hyphenated across line breaks.
+     * "won-\nder" becomes "wonder"
+     */
+    private fun rejoinHyphenatedWords(text: String): String {
+        // Match a hyphen at end of line followed by a newline and lowercase letter
+        return text.replace(Regex("-\\n(\\p{Ll})")) { match ->
+            match.groupValues[1]
+        }
     }
 
     /**

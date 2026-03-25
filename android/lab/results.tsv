@@ -5,3 +5,4 @@ exp_003	2026-03-25T12:08:27.278834+00:00	0.141270	{}	yes	b6ec51d1fe653ad8b06057a
 exp_004	2026-03-25T12:09:47.718768+00:00	0.084010	{}	yes	d4ce2488a96eb97e0dc81a0bcb3d7b817d469015	Sort text at individual line level instead of block level for correct reading order. CER 0.131 -> 0.073.
 exp_005	2026-03-25T12:11:25.183071+00:00	0.081600	{}	yes	c5d442d6708673a528c436708097296f48c85b4b	Improved page number extraction to detect header-embedded page numbers (e.g. '110 ELENA FERRANTE'). Page accuracy 35.3% -> 44.1%.
 exp_006	2026-03-25T12:12:51.813535+00:00	0.077880	{}	yes	0d1e19fa3177e57a4a37a7ce0a55f1aea5ede926	Add line-level facing-page filtering using gap detection between line centers. CER 0.072 -> 0.068.
+exp_007	2026-03-25T12:14:37.636881+00:00	0.074950	{}	yes	59327935399d258b0a816bb1dea460805541226b	Rejoin hyphenated line breaks (e.g. 'won-\nder' -> 'wonder'). CER 0.068 -> 0.065.
