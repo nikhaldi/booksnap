@@ -268,6 +268,14 @@ class BookSnapPipeline(
             else rightLen += info.textLen
         }
 
+        val totalLen = leftLen + rightLen
+        val minorSideLen = minOf(leftLen, rightLen)
+        // Only split if the minor side has substantial text (>15% of total)
+        // This avoids falsely splitting when a few lines are slightly offset
+        if (totalLen == 0 || minorSideLen.toDouble() / totalLen < 0.15) {
+            return lines
+        }
+
         val keepLeft = leftLen > rightLen
         return infos.filter { info ->
             if (keepLeft) info.centerX < bestGapPos else info.centerX >= bestGapPos

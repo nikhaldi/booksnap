@@ -14,3 +14,4 @@ exp_012	2026-03-25T12:34:32.338715+00:00	0.059390	{}	yes	fc7f460ce75c3713861feb2
 exp_013	2026-03-25T12:35:32.618186+00:00	0.067430	{}	no	reverted	CLAHE contrast enhancement made OCR worse. CER regressed 0.053 -> 0.062. Reverting.
 exp_014	2026-03-25T12:36:58.970230+00:00	0.059390	{}	no	reverted	Don't break paragraphs after hyphenated lines. No score change - hyphen rejoin already handled it.
 exp_015	2026-03-25T12:37:53.253085+00:00	0.059300	{}	yes	6155d168760a9e60dcae89825a67d284951effd3	Fix OCR character substitutions: double hyphens to em dashes, angle brackets to guillemets. CER 0.0534 -> 0.0533.
+exp_016	2026-03-25T12:38:47.572929+00:00	0.054110	{}	yes	211e6d044b78d0194ce7f36b3190f5a71ce2a463	Line-level facing-page filter now requires minor side to have >15% of total text before splitting. Prevents false splits on single-page images. CER 0.053 -> 0.048.
