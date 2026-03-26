@@ -473,7 +473,19 @@ class BookSnapPipeline(
         if (candidates.isEmpty()) return null
 
         // Sort by priority (lower is better), then prefer bottom of page
-        val best = candidates.sortedWith(compareBy<Candidate> { it.priority }.thenByDescending { it.lineY }).first()
+        val sorted = candidates.sortedWith(compareBy<Candidate> { it.priority }.thenByDescending { it.lineY })
+        val best = sorted.first()
+
+        // If the best candidate is a small standalone number (< 30) and there's a larger
+        // header-embedded candidate, prefer the header one (small standalone numbers are
+        // often OCR noise from non-text elements like game boards or artifacts)
+        if (best.priority == 1 && best.pageNum < 30) {
+            val headerCandidate = sorted.firstOrNull { it.priority > 1 && it.pageNum >= 30 }
+            if (headerCandidate != null) {
+                return PageNumberResult(headerCandidate.block, headerCandidate.line, headerCandidate.pageNum)
+            }
+        }
+
         return PageNumberResult(best.block, best.line, best.pageNum)
     }
 
