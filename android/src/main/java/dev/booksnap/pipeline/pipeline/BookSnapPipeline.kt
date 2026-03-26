@@ -35,21 +35,25 @@ class BookSnapPipeline(
     private lateinit var engine: OcrEngine
     private var langDetector: LanguageDetector? = null
     private val hunspellCheckers = mutableMapOf<String, Hunspell>()
+    private var spellCheckEnabled = true
 
     override suspend fun initialize(context: Context, options: Map<String, Any>) {
+        spellCheckEnabled = options["spellCheck"] as? Boolean ?: true
         OpenCvCompat.init()
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
-        for (lang in listOf("en", "en-GB", "fr", "de", "it", "el")) {
-            try {
-                val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
-                val dicStream = BufferedInputStream(context.assets.open("hunspell/$lang.dic"))
-                val tempDir = ByteBuffersDirectory()
-                val dict = HunspellDictionary(tempDir, "hunspell_$lang", affStream, dicStream)
-                hunspellCheckers[lang] = Hunspell(dict)
-                affStream.close()
-                dicStream.close()
-            } catch (e: Exception) { /* skip unavailable dictionaries */ }
+        if (spellCheckEnabled) {
+            for (lang in listOf("en", "en-GB", "fr", "de", "it", "el")) {
+                try {
+                    val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
+                    val dicStream = BufferedInputStream(context.assets.open("hunspell/$lang.dic"))
+                    val tempDir = ByteBuffersDirectory()
+                    val dict = HunspellDictionary(tempDir, "hunspell_$lang", affStream, dicStream)
+                    hunspellCheckers[lang] = Hunspell(dict)
+                    affStream.close()
+                    dicStream.close()
+                } catch (e: Exception) { /* skip unavailable dictionaries */ }
+            }
         }
     }
 
@@ -155,11 +159,13 @@ class BookSnapPipeline(
         val headerResult = removeHeaderPrefix(postProcessed, pageNum)
         val rawText = rejoinHyphenatedWords(headerResult.text)
         // Detect language and apply Lucene Hunspell spell correction
-        val textLang = try {
-            langDetector?.identifyLanguage(rawText.take(500)) ?: "und"
-        } catch (e: Exception) { "und" }
-        val text = if (textLang != "und" && hunspellCheckers.containsKey(textLang)) {
-            spellCorrectText(rawText, hunspellCheckers[textLang]!!)
+        val text = if (spellCheckEnabled) {
+            val textLang = try {
+                langDetector?.identifyLanguage(rawText.take(500)) ?: "und"
+            } catch (e: Exception) { "und" }
+            if (textLang != "und" && hunspellCheckers.containsKey(textLang)) {
+                spellCorrectText(rawText, hunspellCheckers[textLang]!!)
+            } else rawText
         } else rawText
 
         // Compute text bounds as union of all cleaned line bounding boxes
