@@ -180,11 +180,21 @@ class BookSnapPipeline(
             textPageResult.cleanedText
         } else text
 
+        // If page number was found via text fallback but we have no bounds,
+        // search the original ML Kit lines for the matching number's bounding box
+        val finalPageNumberBounds = pageNumberBounds ?: if (finalPageNum != null) {
+            val numStr = finalPageNum.toString()
+            sortedLines.find { it.text.trim() == numStr }?.boundingBox?.let {
+                val raw = BoundingBox(it.left, it.top, it.width(), it.height())
+                undeskewBounds(raw, deskewAngle, bitmap.width, bitmap.height)
+            }
+        } else null
+
         return PageResult(
             text = finalText,
             textBounds = textBounds,
             pageNumber = finalPageNum,
-            pageNumberBounds = pageNumberBounds,
+            pageNumberBounds = finalPageNumberBounds,
         )
     }
 
