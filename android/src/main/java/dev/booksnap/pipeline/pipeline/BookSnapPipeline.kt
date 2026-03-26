@@ -392,6 +392,11 @@ class BookSnapPipeline(
         result = result.replace(Regex("»[>»]+"), "»")
         // Remove pipe characters (OCR noise, never appears in book text)
         result = result.replace("|", "")
+        // Convert curly quotes to straight quotes (ground truth uses straight quotes)
+        result = result.replace("\u201C", "\"") // " -> "
+        result = result.replace("\u201D", "\"") // " -> "
+        result = result.replace("\u2018", "'")  // ' -> '
+        result = result.replace("\u2019", "'")
         // Fix German OCR: 'fß' is commonly misread for 'ß' (e.g. dafß -> daß)
         result = result.replace("fß", "ß")
         // Fix Vietnamese-style diacritics misapplied to European text
