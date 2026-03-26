@@ -159,15 +159,14 @@ class BookSnapPipeline(
         val paragraphs = joinLinesIntoParagraphs(cleanedLines)
         val postProcessed = splitDialogueParagraphs(paragraphs)
         val headerResult = removeHeaderPrefix(postProcessed, pageNum)
-        val rawText = rejoinHyphenatedWords(headerResult.text)
-        // Detect language and apply Lucene Hunspell spell correction
-        val text = if (spellCheckEnabled) {
-            val textLang = try {
-                langDetector?.identifyLanguage(rawText.take(500)) ?: "und"
-            } catch (e: Exception) { "und" }
-            if (textLang != "und" && hunspellCheckers.containsKey(textLang)) {
-                spellCorrectText(rawText, hunspellCheckers[textLang]!!)
-            } else rawText
+        // Detect language for spell correction and language-specific postprocessing
+        val textLang = try {
+            langDetector?.identifyLanguage(headerResult.text.take(500)) ?: "und"
+        } catch (e: Exception) { "und" }
+
+        val rawText = rejoinHyphenatedWords(headerResult.text, textLang)
+        val text = if (spellCheckEnabled && textLang != "und" && hunspellCheckers.containsKey(textLang)) {
+            spellCorrectText(rawText, hunspellCheckers[textLang]!!)
         } else rawText
 
         // Compute text bounds as union of all cleaned line bounding boxes
@@ -391,24 +390,26 @@ class BookSnapPipeline(
      * Rejoin words that were hyphenated across line breaks.
      * "won-\nder" becomes "wonder"
      */
-    private fun rejoinHyphenatedWords(text: String): String {
+    private fun rejoinHyphenatedWords(text: String, language: String = "und"): String {
         // Match a hyphen at end of line followed by a newline and lowercase letter
         var result = text.replace(Regex("-\\n(\\p{Ll})")) { match ->
             match.groupValues[1]
         }
-        // Fix missing apostrophes in common contractions
-        val contractions = mapOf(
-            "dont" to "don't", "didnt" to "didn't", "doesnt" to "doesn't",
-            "isnt" to "isn't", "wasnt" to "wasn't", "couldnt" to "couldn't",
-            "wouldnt" to "wouldn't", "shouldnt" to "shouldn't", "cant" to "can't",
-            "wont" to "won't", "hasnt" to "hasn't", "havent" to "haven't",
-            "hadnt" to "hadn't", "arent" to "aren't", "werent" to "weren't",
-            "youre" to "you're", "theyre" to "they're", "thats" to "that's",
-            "whats" to "what's", "heres" to "here's", "theres" to "there's",
-            "lets" to "let's", "wheres" to "where's", "whos" to "who's",
-        )
-        result = result.replace(Regex("\\b(\\w+)\\b")) { match ->
-            contractions[match.value] ?: match.value
+        // Fix missing apostrophes in common English contractions
+        if (language == "en") {
+            // Only contractions where the un-apostrophe'd form is never a valid word.
+            // Excluded: cant, wont, lets, thats, whats, heres, theres, whos (all valid words)
+            val contractions = mapOf(
+                "dont" to "don't", "didnt" to "didn't", "doesnt" to "doesn't",
+                "isnt" to "isn't", "wasnt" to "wasn't", "couldnt" to "couldn't",
+                "wouldnt" to "wouldn't", "shouldnt" to "shouldn't",
+                "hasnt" to "hasn't", "havent" to "haven't",
+                "hadnt" to "hadn't", "arent" to "aren't", "werent" to "weren't",
+                "youre" to "you're", "theyre" to "they're",
+            )
+            result = result.replace(Regex("\\b(\\w+)\\b")) { match ->
+                contractions[match.value] ?: match.value
+            }
         }
         // Fix common OCR substitutions
         result = result.replace("--", "\u2014") // double hyphen to em dash
