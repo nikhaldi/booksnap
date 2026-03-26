@@ -432,6 +432,8 @@ class BookSnapPipeline(
         // Remove < or > inserted adjacent to guillemets (OCR noise)
         result = result.replace(Regex("[<>]+«"), "«")
         result = result.replace(Regex("»[<>]+"), "»")
+        result = result.replace(Regex("[<>]+»"), "»")
+        result = result.replace(Regex("«[<>]+"), "«")
         result = result.replace(Regex("(?<=\\s)>\\s*(?=»)"), "")
         result = result.replace(Regex("(?<=«)\\s*<(?=\\s)"), "")
         // Remove pipe characters (OCR noise, never appears in book text)
