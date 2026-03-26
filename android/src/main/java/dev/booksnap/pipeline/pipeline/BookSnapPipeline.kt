@@ -43,7 +43,8 @@ class BookSnapPipeline(
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
         if (spellCheckEnabled) {
-            val langs = com.booksnap.harness.BuildConfig.HUNSPELL_LANGS.split(",")
+            val langsStr = options["hunspellLangs"] as? String ?: ""
+            val langs = langsStr.split(",").filter { it.isNotBlank() }
             for (lang in langs) {
                 try {
                     val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
