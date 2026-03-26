@@ -819,10 +819,14 @@ class BookSnapPipeline(
         val lower = word.lowercase()
         val candidates = mutableSetOf<String>()
 
+        // Helper: check candidate in both lowercase and capitalized forms
+        fun spellValid(c: String): Boolean =
+            checker.spell(c) || checker.spell(c.replaceFirstChar { it.uppercase() })
+
         // Deletions (remove one character)
         for (j in lower.indices) {
             val c = lower.removeRange(j, j + 1)
-            if (c.length >= 4 && checker.spell(c)) candidates.add(c)
+            if (c.length >= 4 && spellValid(c)) candidates.add(c)
         }
 
         // Build substitution alphabet: a-z + common accented chars
@@ -834,7 +838,7 @@ class BookSnapPipeline(
             for (ch in alphabet) {
                 if (ch != lower[j]) {
                     val c = lower.substring(0, j) + ch + lower.substring(j + 1)
-                    if (checker.spell(c)) candidates.add(c)
+                    if (spellValid(c)) candidates.add(c)
                 }
             }
         }
@@ -843,13 +847,21 @@ class BookSnapPipeline(
         for (j in 0..lower.length) {
             for (ch in alphabet) {
                 val c = lower.substring(0, j) + ch + lower.substring(j)
-                if (checker.spell(c)) candidates.add(c)
+                if (spellValid(c)) candidates.add(c)
             }
         }
 
         // Only accept if exactly one correction found (unambiguous)
         if (candidates.size == 1) {
             return applyCasing(word, candidates.first())
+        }
+        // Tiebreaker: if multiple candidates, keep only those sharing the same first letter
+        if (candidates.size > 1) {
+            val firstChar = lower[0]
+            val sameFirst = candidates.filter { it.isNotEmpty() && it[0] == firstChar }
+            if (sameFirst.size == 1) {
+                return applyCasing(word, sameFirst.first())
+            }
         }
         return null
     }
