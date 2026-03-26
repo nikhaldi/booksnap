@@ -173,10 +173,15 @@ class BookSnapPipeline(
         }
 
         // Final fallback: extract page number from the assembled text itself
-        val finalPageNum = headerResult.pageNum ?: extractPageNumberFromText(text)
+        val textPageResult = extractPageNumberFromText(text)
+        val finalPageNum = headerResult.pageNum ?: textPageResult.pageNum
+        // If page number came from text extraction, use the cleaned text (number stripped)
+        val finalText = if (headerResult.pageNum == null && textPageResult.pageNum != null) {
+            textPageResult.cleanedText
+        } else text
 
         return PageResult(
-            text = text,
+            text = finalText,
             textBounds = textBounds,
             pageNumber = finalPageNum,
             pageNumberBounds = pageNumberBounds,
@@ -185,20 +190,27 @@ class BookSnapPipeline(
 
     /**
      * Try to extract a page number from the end of the assembled text.
-     * Looks for a standalone number on the last line.
+     * Looks for a standalone number on the last or first line.
+     * Returns the page number and the text with the page number line removed.
      */
-    private fun extractPageNumberFromText(text: String): Int? {
+    private data class TextPageNumberResult(val pageNum: Int?, val cleanedText: String)
+
+    private fun extractPageNumberFromText(text: String): TextPageNumberResult {
         val lines = text.trimEnd().split("\n")
-        if (lines.isEmpty()) return null
+        if (lines.isEmpty()) return TextPageNumberResult(null, text)
         // Check last line for standalone number
         val lastLine = lines.last().trim()
         val num = lastLine.toIntOrNull()
-        if (num != null && num in 1..9999) return num
+        if (num != null && num in 1..9999) {
+            return TextPageNumberResult(num, lines.dropLast(1).joinToString("\n"))
+        }
         // Check first line for standalone number
         val firstLine = lines.first().trim()
         val firstNum = firstLine.toIntOrNull()
-        if (firstNum != null && firstNum in 1..9999) return firstNum
-        return null
+        if (firstNum != null && firstNum in 1..9999) {
+            return TextPageNumberResult(firstNum, lines.drop(1).joinToString("\n"))
+        }
+        return TextPageNumberResult(null, text)
     }
 
     /**
