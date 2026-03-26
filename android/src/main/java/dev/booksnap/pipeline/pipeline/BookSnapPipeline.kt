@@ -40,7 +40,7 @@ class BookSnapPipeline(
         OpenCvCompat.init()
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
-        for (lang in listOf("en", "fr", "de", "it", "el")) {
+        for (lang in listOf("en", "en-GB", "fr", "de", "it", "el")) {
             try {
                 val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
                 val dicStream = BufferedInputStream(context.assets.open("hunspell/$lang.dic"))
