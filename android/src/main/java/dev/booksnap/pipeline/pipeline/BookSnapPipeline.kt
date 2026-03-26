@@ -397,6 +397,14 @@ class BookSnapPipeline(
         result = result.replace("\u201D", "\"") // " -> "
         result = result.replace("\u2018", "'")  // ' -> '
         result = result.replace("\u2019", "'")
+        // Fix OCR dropping 'n' in n't contractions: "does't" → "doesn't"
+        val knownNtContractions = setOf("don't", "didn't", "doesn't", "isn't", "wasn't",
+            "couldn't", "wouldn't", "shouldn't", "can't", "won't", "hasn't", "haven't",
+            "hadn't", "aren't", "weren't")
+        result = result.replace(Regex("\\b(\\w+)'t\\b")) { match ->
+            val withN = match.groupValues[1] + "n't"
+            if (withN.lowercase() in knownNtContractions) withN else match.value
+        }
         // Fix German OCR: 'fß' is commonly misread for 'ß' (e.g. dafß -> daß)
         result = result.replace("fß", "ß")
         // Fix Vietnamese-style diacritics misapplied to European text
@@ -792,7 +800,9 @@ class BookSnapPipeline(
                 val start = i
                 while (i < text.length && text[i].isLetter()) i++
                 val word = text.substring(start, i)
-                val corrected = tryCorrectWord(word, checker)
+                // Skip spell correction for words that form part of a contraction (e.g., "doesn" before "'t")
+                val beforeApostrophe = i < text.length - 1 && text[i] == '\'' && text[i + 1].isLetter()
+                val corrected = if (beforeApostrophe) null else tryCorrectWord(word, checker)
                 result.append(corrected ?: word)
             } else {
                 result.append(text[i])
