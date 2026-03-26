@@ -429,6 +429,11 @@ class BookSnapPipeline(
         result = result.replace(Regex("(\\p{L}[.!?]?)>(?=[.\\s\n]|$)")) { "${it.groupValues[1]}»" }
         // Remove duplicate » or > after »
         result = result.replace(Regex("»[>»]+"), "»")
+        // Remove < or > inserted adjacent to guillemets (OCR noise)
+        result = result.replace(Regex("[<>]+«"), "«")
+        result = result.replace(Regex("»[<>]+"), "»")
+        result = result.replace(Regex("(?<=\\s)>\\s*(?=»)"), "")
+        result = result.replace(Regex("(?<=«)\\s*<(?=\\s)"), "")
         // Remove pipe characters (OCR noise, never appears in book text)
         result = result.replace("|", "")
         // Convert curly quotes to straight quotes (ground truth uses straight quotes)
