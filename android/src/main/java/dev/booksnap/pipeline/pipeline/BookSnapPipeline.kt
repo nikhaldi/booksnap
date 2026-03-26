@@ -328,6 +328,16 @@ class BookSnapPipeline(
                 }
             }
         }
+        // Also catch short header-only first lines (no page number) where
+        // the following content starts with a lowercase letter (mid-sentence continuation)
+        val nlPos = text.indexOf('\n')
+        if (nlPos in 1..39) {
+            val firstLine = text.substring(0, nlPos).trim()
+            val afterNl = text.substring(nlPos + 1).trimStart()
+            if (afterNl.isNotEmpty() && afterNl[0].isLowerCase() && firstLine.length < 35) {
+                return HeaderCleanResult(afterNl, existingPageNum)
+            }
+        }
         return HeaderCleanResult(text, existingPageNum)
     }
 
