@@ -800,6 +800,19 @@ class BookSnapPipeline(
     private fun tryCorrectWord(word: String, checker: Hunspell): String? {
         if (word.length < 5) return null
 
+        // Fix OCR internal case errors (e.g., suPporter -> supporter)
+        // If the word has unexpected uppercase in the middle, and the original is NOT valid
+        // but the case-fixed version IS valid, fix the casing
+        if (word.length >= 2 && !word.all { it.isUpperCase() } && word.drop(1).any { it.isUpperCase() }) {
+            val asIsValid = hunspellCheckers.values.any { it.spell(word) }
+            if (!asIsValid) {
+                val fixed = word[0] + word.substring(1).lowercase()
+                if (hunspellCheckers.values.any { it.spell(fixed) || it.spell(fixed.lowercase()) }) {
+                    return fixed
+                }
+            }
+        }
+
         // Skip if already valid in ANY language dictionary
         if (isValidInAnyDict(word)) return null
 
