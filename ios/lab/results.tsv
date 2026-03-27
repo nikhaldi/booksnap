@@ -4,3 +4,4 @@ exp_002	2026-03-27T10:34:13.733165+00:00	0.860388	{}	no	reverted	VNDetectDocumen
 exp_003	2026-03-27T10:35:52.195044+00:00	0.105638	{}	yes	85c7c66b9d995a73e729b93443386561cc3a8e63	Add page number extraction from top/bottom 15% margin observations. Page number accuracy: 0.0 -> 0.382.
 exp_004	2026-03-27T10:39:33.022389+00:00	0.095244	{}	yes	3a09d92d463a14e58f9864b2b1735d02f70b45fd	Filter facing-page text by keeping only the dominant text column (left/right side). CER improved from 0.0952 to 0.0846.
 exp_005	2026-03-27T10:43:05.830794+00:00	0.035734	{}	yes	d0d4d03447a3d7697e5e5ff08edf1ffae136e088	Improved facing-page filter using body column overlap detection instead of simple left/right split. CER improved from 0.0846 to 0.0239.
+exp_006	2026-03-27T10:46:07.549858+00:00	0.032205	{}	yes	09e5bc88f27587587b8a548bde4639ba5aae1b7d	Improved page number extraction to parse numbers from running headers/footers (not just standalone). Page accuracy: 0.382 -> 0.559.

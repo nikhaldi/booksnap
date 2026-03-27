@@ -180,7 +180,8 @@ public class BookSnapPipeline {
     )
   }
 
-  /// Look for a standalone number in the top or bottom 15% of the image — likely a page number.
+  /// Look for a page number in the top or bottom margin of the image.
+  /// Checks for standalone numbers and numbers embedded in running headers/footers.
   private static func extractPageNumber(
     from observations: [VNRecognizedTextObservation],
     imageWidth: CGFloat,
@@ -188,28 +189,55 @@ public class BookSnapPipeline {
   ) -> (Int?, BoundingBox?) {
     let marginThreshold: CGFloat = 0.15  // top/bottom 15% of image
 
+    var candidates: [(num: Int, obs: VNRecognizedTextObservation)] = []
+
     for obs in observations {
       let bbox = obs.boundingBox
-      // Check if observation is in top or bottom margin
-      // Vision coords: origin is bottom-left, y goes up
       let isInBottomMargin = bbox.origin.y < marginThreshold
       let isInTopMargin = (bbox.origin.y + bbox.size.height) > (1.0 - marginThreshold)
 
       guard isInBottomMargin || isInTopMargin else { continue }
+      guard let text = obs.topCandidates(1).first?.string else { continue }
+      let trimmed = text.trimmingCharacters(in: .whitespaces)
 
-      guard let candidate = obs.topCandidates(1).first?.string else { continue }
-      let trimmed = candidate.trimmingCharacters(in: .whitespaces)
-
-      // Must be a standalone number (1-4 digits)
+      // Try standalone number first
       if let num = Int(trimmed), num > 0 && num < 10000 {
-        let x = bbox.origin.x * imageWidth
-        let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
-        let w = bbox.size.width * imageWidth
-        let h = bbox.size.height * imageHeight
-        let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
-        return (num, bounds)
+        candidates.append((num, obs))
+        continue
+      }
+
+      // Try number at start of line (e.g. "110 - ELENA FERRANTE", "216 VINELAND")
+      let words = trimmed.split(separator: " ", maxSplits: 1)
+      if let first = words.first, let num = Int(first), num > 0 && num < 10000 {
+        candidates.append((num, obs))
+        continue
+      }
+
+      // Try number at end of line (e.g. "CHAPTER TITLE 217")
+      if let last = trimmed.split(separator: " ").last, let num = Int(last), num > 0 && num < 10000 {
+        candidates.append((num, obs))
+        continue
       }
     }
+
+    // Prefer standalone numbers, then pick the first candidate
+    // Sort: standalone (shorter text) first
+    candidates.sort { a, b in
+      let aLen = a.obs.topCandidates(1).first?.string.count ?? 0
+      let bLen = b.obs.topCandidates(1).first?.string.count ?? 0
+      return aLen < bLen
+    }
+
+    if let best = candidates.first {
+      let bbox = best.obs.boundingBox
+      let x = bbox.origin.x * imageWidth
+      let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
+      let w = bbox.size.width * imageWidth
+      let h = bbox.size.height * imageHeight
+      let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
+      return (best.num, bounds)
+    }
+
     return (nil, nil)
   }
 
