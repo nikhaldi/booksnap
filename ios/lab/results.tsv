@@ -14,3 +14,5 @@ exp_013	2026-03-27T12:22:09.634611+00:00	0.024734	{}	yes	0ecba74be4109fc0e619a2e
 exp_017	2026-03-27T12:36:22.857325+00:00	0.026369	{}	no	reverted	Paragraph break detection using vertical gaps between observations. CER regressed - gap thresholds not well-calibrated across book formats.
 exp_018	2026-03-27T12:38:34.377007+00:00	0.024584	{}	yes	4a95fb5de28dcdb7dcd5cedc8ed9800189623c3b	Add colon to sentence enders for dialogue paragraph breaks. CER: 0.0192->0.0191. Helps with dialogue-heavy Italian/French text.
 exp_019	2026-03-27T12:41:18.107205+00:00	0.022820	{}	yes	7585da51df092b4caa4cf71492d6b72fa97be553	Widen page number margin threshold from 20% to 25%. Page accuracy: 0.706->0.794 (+3 correct). CER unchanged.
+exp_020	2026-03-27T12:45:19.003153+00:00	0.022820	{}	no	reverted	Filter low-confidence observations (<0.2). No change - all observations already have sufficient confidence.
+exp_021	2026-03-27T12:47:19.576015+00:00	0.021680	{}	yes	58e1c5dcafc6543b6d0f48c49442d9269264811a	Expand header filter margin from 10% to 12%. CER improved: 0.0191->0.0179. Catches more running headers.

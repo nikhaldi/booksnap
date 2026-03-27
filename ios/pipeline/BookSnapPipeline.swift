@@ -162,7 +162,7 @@ public class BookSnapPipeline {
   ) -> [VNRecognizedTextObservation] {
     guard observations.count > 3 else { return observations }
 
-    let marginThreshold: CGFloat = 0.10  // top/bottom 10%
+    let marginThreshold: CGFloat = 0.12  // top/bottom 12%
 
     // Compute median width of all observations
     let widths = observations.map { $0.boundingBox.size.width }.sorted()
