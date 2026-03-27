@@ -36,16 +36,19 @@ public class BookSnapPipeline {
       throw PipelineError.recognitionFailed
     }
 
-    let lines = observations
+    // Filter out facing-page text by keeping only the dominant text column
+    let filtered = Self.filterFacingPage(observations)
+
+    let lines = filtered
       .compactMap { $0.topCandidates(1).first?.string }
 
     let text = Self.joinLines(lines)
 
     let imageWidth = CGFloat(cgImage.width)
     let imageHeight = CGFloat(cgImage.height)
-    let textBounds = Self.computeUnionBounds(observations, imageWidth: imageWidth, imageHeight: imageHeight)
+    let textBounds = Self.computeUnionBounds(filtered, imageWidth: imageWidth, imageHeight: imageHeight)
 
-    // Extract page number from observations at top or bottom margins
+    // Extract page number from all observations (page numbers may be outside main text column)
     let (pageNumber, pageNumberBounds) = Self.extractPageNumber(
       from: observations, imageWidth: imageWidth, imageHeight: imageHeight
     )
@@ -99,6 +102,60 @@ public class BookSnapPipeline {
       }
     }
     return result
+  }
+
+  /// Filter observations to keep only the dominant page (right or left).
+  /// In two-page book spreads, text from the facing page bleeds in.
+  /// We identify the dominant column by finding which side of the image
+  /// contains the majority of text (by character count), then filter out
+  /// observations whose center-x is on the wrong side.
+  private static func filterFacingPage(
+    _ observations: [VNRecognizedTextObservation]
+  ) -> [VNRecognizedTextObservation] {
+    guard observations.count > 2 else { return observations }
+
+    // Compute weighted x-center for each observation (weighted by text length)
+    // Vision coords: x in [0,1], origin bottom-left
+    var leftWeight = 0
+    var rightWeight = 0
+
+    for obs in observations {
+      let centerX = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
+      let textLen = obs.topCandidates(1).first?.string.count ?? 0
+      if centerX < 0.5 {
+        leftWeight += textLen
+      } else {
+        rightWeight += textLen
+      }
+    }
+
+    // If text is predominantly on one side (>70% of chars), filter out the other side
+    let totalWeight = leftWeight + rightWeight
+    guard totalWeight > 0 else { return observations }
+
+    let dominantIsRight = rightWeight >= leftWeight
+    let dominantRatio = CGFloat(max(leftWeight, rightWeight)) / CGFloat(totalWeight)
+
+    // Only filter if there's a clear dominant side (>65% of text)
+    guard dominantRatio > 0.65 else { return observations }
+
+    // Find the median x-center of dominant-side observations to set a more precise cutoff
+    let dominantObs = observations.filter { obs in
+      let cx = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
+      return dominantIsRight ? cx >= 0.35 : cx <= 0.65
+    }
+
+    // Keep observations on the dominant side, with some tolerance
+    let filtered = observations.filter { obs in
+      let cx = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
+      if dominantIsRight {
+        return cx >= 0.25  // Keep anything from ~25% rightward
+      } else {
+        return cx <= 0.75  // Keep anything from ~75% leftward
+      }
+    }
+
+    return filtered.isEmpty ? observations : filtered
   }
 
   private static func computeUnionBounds(
