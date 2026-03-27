@@ -14,6 +14,7 @@ import org.apache.lucene.analysis.hunspell.Dictionary as HunspellDictionary
 import org.apache.lucene.analysis.hunspell.Hunspell
 import org.apache.lucene.store.ByteBuffersDirectory
 import java.io.BufferedInputStream
+import kotlinx.coroutines.tasks.await
 
 /**
  * Baseline pipeline: loads the image and runs OCR with default settings.
