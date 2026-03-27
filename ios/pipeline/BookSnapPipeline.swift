@@ -106,53 +106,43 @@ public class BookSnapPipeline {
 
   /// Filter observations to keep only the dominant page (right or left).
   /// In two-page book spreads, text from the facing page bleeds in.
-  /// We identify the dominant column by finding which side of the image
-  /// contains the majority of text (by character count), then filter out
-  /// observations whose center-x is on the wrong side.
+  /// We find the dominant text column by looking at the left edge (x origin)
+  /// of the widest observations, then filter out text from the other page.
   private static func filterFacingPage(
     _ observations: [VNRecognizedTextObservation]
   ) -> [VNRecognizedTextObservation] {
-    guard observations.count > 2 else { return observations }
+    guard observations.count > 3 else { return observations }
 
-    // Compute weighted x-center for each observation (weighted by text length)
-    // Vision coords: x in [0,1], origin bottom-left
-    var leftWeight = 0
-    var rightWeight = 0
+    // Sort observations by width (descending) - the widest lines are the main body text
+    let sorted = observations.sorted { $0.boundingBox.size.width > $1.boundingBox.size.width }
 
-    for obs in observations {
-      let centerX = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
-      let textLen = obs.topCandidates(1).first?.string.count ?? 0
-      if centerX < 0.5 {
-        leftWeight += textLen
-      } else {
-        rightWeight += textLen
-      }
-    }
+    // Take the top ~60% widest observations as "body" lines
+    let bodyCount = max(3, sorted.count * 6 / 10)
+    let bodyObs = Array(sorted.prefix(bodyCount))
 
-    // If text is predominantly on one side (>70% of chars), filter out the other side
-    let totalWeight = leftWeight + rightWeight
-    guard totalWeight > 0 else { return observations }
+    // Find the median left-edge x of body observations
+    let leftEdges = bodyObs.map { $0.boundingBox.origin.x }.sorted()
+    let medianLeftEdge = leftEdges[leftEdges.count / 2]
 
-    let dominantIsRight = rightWeight >= leftWeight
-    let dominantRatio = CGFloat(max(leftWeight, rightWeight)) / CGFloat(totalWeight)
+    // Find the median right-edge x of body observations
+    let rightEdges = bodyObs.map { $0.boundingBox.origin.x + $0.boundingBox.size.width }.sorted()
+    let medianRightEdge = rightEdges[rightEdges.count / 2]
 
-    // Only filter if there's a clear dominant side (>65% of text)
-    guard dominantRatio > 0.65 else { return observations }
+    // Filter: keep observations that overlap significantly with the body column
+    // An observation is "on the same page" if its horizontal range overlaps
+    // with the body column by at least 30%
+    let columnWidth = medianRightEdge - medianLeftEdge
+    guard columnWidth > 0.1 else { return observations }
 
-    // Find the median x-center of dominant-side observations to set a more precise cutoff
-    let dominantObs = observations.filter { obs in
-      let cx = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
-      return dominantIsRight ? cx >= 0.35 : cx <= 0.65
-    }
-
-    // Keep observations on the dominant side, with some tolerance
     let filtered = observations.filter { obs in
-      let cx = obs.boundingBox.origin.x + obs.boundingBox.size.width / 2
-      if dominantIsRight {
-        return cx >= 0.25  // Keep anything from ~25% rightward
-      } else {
-        return cx <= 0.75  // Keep anything from ~75% leftward
-      }
+      let obsLeft = obs.boundingBox.origin.x
+      let obsRight = obsLeft + obs.boundingBox.size.width
+      let overlapLeft = max(medianLeftEdge, obsLeft)
+      let overlapRight = min(medianRightEdge, obsRight)
+      let overlap = max(0, overlapRight - overlapLeft)
+      let obsWidth = obs.boundingBox.size.width
+      guard obsWidth > 0 else { return false }
+      return overlap / obsWidth > 0.3
     }
 
     return filtered.isEmpty ? observations : filtered
