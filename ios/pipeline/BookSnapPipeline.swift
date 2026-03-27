@@ -234,7 +234,7 @@ public class BookSnapPipeline {
     imageWidth: CGFloat,
     imageHeight: CGFloat
   ) -> (Int?, BoundingBox?) {
-    let marginThreshold: CGFloat = 0.15  // top/bottom 15% of image
+    let marginThreshold: CGFloat = 0.20  // top/bottom 20% of image
 
     // (num, observation, isStandalone)
     var candidates: [(Int, VNRecognizedTextObservation, Bool)] = []
