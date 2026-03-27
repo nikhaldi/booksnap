@@ -1,5 +1,6 @@
 import UIKit
 import Vision
+import CoreImage
 
 /// Base pipeline: loads the image and runs Apple Vision with default settings.
 ///
@@ -25,11 +26,14 @@ public class BookSnapPipeline {
       throw PipelineError.imageLoadFailed
     }
 
+    // Enhance contrast to improve OCR on uneven lighting / curved pages
+    let enhancedImage = Self.enhanceContrast(cgImage) ?? cgImage
+
     let request = VNRecognizeTextRequest()
     request.recognitionLevel = .accurate
     request.usesLanguageCorrection = true
 
-    let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+    let handler = VNImageRequestHandler(cgImage: enhancedImage, options: [:])
     try handler.perform([request])
 
     guard let observations = request.results else {
@@ -298,6 +302,18 @@ public class BookSnapPipeline {
     let h = bbox.size.height * imageHeight
     let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
     return (chosen.0, bounds)
+  }
+
+  /// Apply mild contrast enhancement using Core Image.
+  private static func enhanceContrast(_ cgImage: CGImage) -> CGImage? {
+    let ciImage = CIImage(cgImage: cgImage)
+    guard let filter = CIFilter(name: "CIColorControls") else { return nil }
+    filter.setValue(ciImage, forKey: kCIInputImageKey)
+    filter.setValue(1.1, forKey: kCIInputContrastKey)     // slight contrast boost
+    filter.setValue(0.02, forKey: kCIInputBrightnessKey)   // tiny brightness increase
+    guard let output = filter.outputImage else { return nil }
+    let context = CIContext()
+    return context.createCGImage(output, from: output.extent)
   }
 
   private static func loadImage(from path: String) throws -> UIImage {
