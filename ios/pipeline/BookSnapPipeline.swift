@@ -213,6 +213,16 @@ public class BookSnapPipeline {
     )
   }
 
+  /// Extract digits from a token, stripping punctuation like bullets and dashes.
+  private static func parsePageNum(_ token: String) -> Int? {
+    let digits = token.filter { $0.isNumber }
+    guard !digits.isEmpty else { return nil }
+    // The token should be mostly digits (allow 1-2 punctuation chars like "86•" or "265.")
+    guard digits.count >= token.count - 2 else { return nil }
+    guard let num = Int(digits), num > 0 && num < 10000 else { return nil }
+    return num
+  }
+
   /// Look for a page number in the top or bottom margin of the image.
   /// Checks for standalone numbers and numbers embedded in running headers/footers.
   private static func extractPageNumber(
@@ -222,7 +232,8 @@ public class BookSnapPipeline {
   ) -> (Int?, BoundingBox?) {
     let marginThreshold: CGFloat = 0.15  // top/bottom 15% of image
 
-    var candidates: [(num: Int, obs: VNRecognizedTextObservation)] = []
+    // (num, observation, isStandalone)
+    var candidates: [(Int, VNRecognizedTextObservation, Bool)] = []
 
     for obs in observations {
       let bbox = obs.boundingBox
@@ -233,45 +244,60 @@ public class BookSnapPipeline {
       guard let text = obs.topCandidates(1).first?.string else { continue }
       let trimmed = text.trimmingCharacters(in: .whitespaces)
 
-      // Try standalone number first
-      if let num = Int(trimmed), num > 0 && num < 10000 {
-        candidates.append((num, obs))
+      // Try standalone number (with optional punctuation like "86•")
+      if let num = parsePageNum(trimmed) {
+        candidates.append((num, obs, true))
         continue
       }
 
-      // Try number at start of line (e.g. "110 - ELENA FERRANTE", "216 VINELAND")
-      let words = trimmed.split(separator: " ", maxSplits: 1)
-      if let first = words.first, let num = Int(first), num > 0 && num < 10000 {
-        candidates.append((num, obs))
+      let words = trimmed.split(separator: " ").map(String.init)
+
+      // Try number at start of line (e.g. "110 - ELENA FERRANTE")
+      if let first = words.first, let num = parsePageNum(first) {
+        candidates.append((num, obs, false))
         continue
       }
 
-      // Try number at end of line (e.g. "CHAPTER TITLE 217")
-      if let last = trimmed.split(separator: " ").last, let num = Int(last), num > 0 && num < 10000 {
-        candidates.append((num, obs))
+      // Try number at end of line (e.g. "CHAPTER TITLE 217", "Du côté de chez Swann 307")
+      if let last = words.last, let num = parsePageNum(last) {
+        candidates.append((num, obs, false))
         continue
+      }
+
+      // Try any number token in the line (e.g. "TITLE • 265")
+      for i in 1..<words.count {
+        if let num = parsePageNum(words[i]) {
+          candidates.append((num, obs, false))
+          break
+        }
       }
     }
 
-    // Prefer standalone numbers, then pick the first candidate
-    // Sort: standalone (shorter text) first
-    candidates.sort { a, b in
-      let aLen = a.obs.topCandidates(1).first?.string.count ?? 0
-      let bLen = b.obs.topCandidates(1).first?.string.count ?? 0
-      return aLen < bLen
+    guard !candidates.isEmpty else { return (nil, nil) }
+
+    // Select best candidate:
+    // 1. Standalone numbers >= 10 are most reliable (real page numbers, not footnote markers)
+    // 2. Numbers from header lines are reliable
+    // 3. Small standalone numbers (< 10) are least reliable (could be footnote markers)
+    let chosen: (Int, VNRecognizedTextObservation, Bool)
+    let standaloneGood = candidates.filter { $0.2 && $0.0 >= 10 }
+    let headerNums = candidates.filter { !$0.2 }
+
+    if let s = standaloneGood.first {
+      chosen = s
+    } else if let h = headerNums.first {
+      chosen = h
+    } else {
+      chosen = candidates.first!
     }
 
-    if let best = candidates.first {
-      let bbox = best.obs.boundingBox
-      let x = bbox.origin.x * imageWidth
-      let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
-      let w = bbox.size.width * imageWidth
-      let h = bbox.size.height * imageHeight
-      let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
-      return (best.num, bounds)
-    }
-
-    return (nil, nil)
+    let bbox = chosen.1.boundingBox
+    let x = bbox.origin.x * imageWidth
+    let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
+    let w = bbox.size.width * imageWidth
+    let h = bbox.size.height * imageHeight
+    let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
+    return (chosen.0, bounds)
   }
 
   private static func loadImage(from path: String) throws -> UIImage {
