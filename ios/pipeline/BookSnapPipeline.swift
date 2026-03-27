@@ -45,7 +45,17 @@ public class BookSnapPipeline {
     let imageHeight = CGFloat(cgImage.height)
     let textBounds = Self.computeUnionBounds(observations, imageWidth: imageWidth, imageHeight: imageHeight)
 
-    return PageResult(text: text, textBounds: textBounds)
+    // Extract page number from observations at top or bottom margins
+    let (pageNumber, pageNumberBounds) = Self.extractPageNumber(
+      from: observations, imageWidth: imageWidth, imageHeight: imageHeight
+    )
+
+    return PageResult(
+      text: text,
+      textBounds: textBounds,
+      pageNumber: pageNumber,
+      pageNumberBounds: pageNumberBounds
+    )
   }
 
   /// Join OCR lines into flowing paragraphs, resolving end-of-line hyphenation.
@@ -121,6 +131,39 @@ public class BookSnapPipeline {
       width: Int(maxX - minX),
       height: Int(maxY - minY)
     )
+  }
+
+  /// Look for a standalone number in the top or bottom 15% of the image — likely a page number.
+  private static func extractPageNumber(
+    from observations: [VNRecognizedTextObservation],
+    imageWidth: CGFloat,
+    imageHeight: CGFloat
+  ) -> (Int?, BoundingBox?) {
+    let marginThreshold: CGFloat = 0.15  // top/bottom 15% of image
+
+    for obs in observations {
+      let bbox = obs.boundingBox
+      // Check if observation is in top or bottom margin
+      // Vision coords: origin is bottom-left, y goes up
+      let isInBottomMargin = bbox.origin.y < marginThreshold
+      let isInTopMargin = (bbox.origin.y + bbox.size.height) > (1.0 - marginThreshold)
+
+      guard isInBottomMargin || isInTopMargin else { continue }
+
+      guard let candidate = obs.topCandidates(1).first?.string else { continue }
+      let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+
+      // Must be a standalone number (1-4 digits)
+      if let num = Int(trimmed), num > 0 && num < 10000 {
+        let x = bbox.origin.x * imageWidth
+        let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
+        let w = bbox.size.width * imageWidth
+        let h = bbox.size.height * imageHeight
+        let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
+        return (num, bounds)
+      }
+    }
+    return (nil, nil)
   }
 
   private static func loadImage(from path: String) throws -> UIImage {

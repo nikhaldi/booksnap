@@ -1,2 +1,4 @@
 experiment_id	timestamp	score	metrics	kept	commit_sha	notes
 exp_001	2026-03-27T10:29:59.837978+00:00	0.113285	{}	yes	f00bb9dabf4a956ce45efcdae9042e4516ff23e4	Join OCR lines into paragraphs with space separator and resolve end-of-line hyphenation. CER improved from 0.1107 to 0.0952.
+exp_002	2026-03-27T10:34:13.733165+00:00	0.860388	{}	no	reverted	VNDetectDocumentSegmentationRequest + crop to detected region. Score regressed massively - document segmentation crops incorrectly on book pages.
+exp_003	2026-03-27T10:35:52.195044+00:00	0.105638	{}	yes	85c7c66b9d995a73e729b93443386561cc3a8e63	Add page number extraction from top/bottom 15% margin observations. Page number accuracy: 0.0 -> 0.382.
