@@ -56,9 +56,43 @@ public class BookSnapPipeline {
     let textBounds = Self.computeUnionBounds(bodyObs, imageWidth: imageWidth, imageHeight: imageHeight)
 
     // Extract page number from all observations (page numbers may be outside main text column)
-    let (pageNumber, pageNumberBounds) = Self.extractPageNumber(
+    var (pageNumber, pageNumberBounds) = Self.extractPageNumber(
       from: observations, imageWidth: imageWidth, imageHeight: imageHeight
     )
+
+    // Fallback: if no page number found in margins, check first/last body observations
+    // which may contain a merged running header with page number
+    if pageNumber == nil {
+      let fallbackObs = [bodyObs.first, bodyObs.last].compactMap { $0 }
+      for obs in fallbackObs {
+        guard let text = obs.topCandidates(1).first?.string else { continue }
+        let words = text.trimmingCharacters(in: .whitespaces).split(separator: " ").map(String.init)
+        // Check first word
+        if let first = words.first, let num = Self.parsePageNum(first), num >= 10 {
+          pageNumber = num
+          let bbox = obs.boundingBox
+          pageNumberBounds = BoundingBox(
+            x: Int(bbox.origin.x * imageWidth),
+            y: Int((1.0 - bbox.origin.y - bbox.size.height) * imageHeight),
+            width: Int(bbox.size.width * imageWidth),
+            height: Int(bbox.size.height * imageHeight)
+          )
+          break
+        }
+        // Check last word
+        if let last = words.last, let num = Self.parsePageNum(last), num >= 10 {
+          pageNumber = num
+          let bbox = obs.boundingBox
+          pageNumberBounds = BoundingBox(
+            x: Int(bbox.origin.x * imageWidth),
+            y: Int((1.0 - bbox.origin.y - bbox.size.height) * imageHeight),
+            width: Int(bbox.size.width * imageWidth),
+            height: Int(bbox.size.height * imageHeight)
+          )
+          break
+        }
+      }
+    }
 
     return PageResult(
       text: text,
