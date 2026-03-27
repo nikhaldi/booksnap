@@ -90,6 +90,24 @@ public class BookSnapPipeline {
       }
     }
 
+    // Strip trailing page number from body text if Vision merged it with the last line
+    if let pn = pageNumber {
+      let pnStr = String(pn)
+      let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+      if trimmed.hasSuffix(pnStr) {
+        let beforeIdx = trimmed.index(trimmed.endIndex, offsetBy: -pnStr.count)
+        // Only strip if the number is preceded by whitespace or is at start
+        if beforeIdx == trimmed.startIndex {
+          text = String(trimmed.dropLast(pnStr.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        } else {
+          let charBefore = trimmed[trimmed.index(before: beforeIdx)]
+          if charBefore == " " || charBefore == "\n" || !charBefore.isLetter {
+            text = String(trimmed.dropLast(pnStr.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+          }
+        }
+      }
+    }
+
     return PageResult(
       text: text,
       textBounds: textBounds,
