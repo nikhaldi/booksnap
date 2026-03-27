@@ -1,0 +1,16 @@
+[lab]
+name = "booksnap-android"
+# Pipeline dir is relative to this lab.toml — points up to the production code
+pipeline_dir = "../src/main/java/dev/booksnap/pipeline"
+
+[backend]
+module = "backends/android.py"
+class = "AndroidBackend"
+
+[sandbox]
+dockerfile = "Dockerfile"
+build_context = "../.."
+
+[backend.host_service]
+command = "python emulator_daemon.py --port 9100 --data-dir $ARL_DATA_DIR --pipeline-dir $ARL_PIPELINE_DIR"
+port = 9100

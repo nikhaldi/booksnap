@@ -1,0 +1,36 @@
+name: BookSnapHarness
+options:
+  bundleIdPrefix: dev.booksnap
+  deploymentTarget:
+    iOS: "17.0"
+
+targets:
+  BookSnapHarness:
+    type: application
+    platform: iOS
+    sources:
+      - BookSnapHarness
+      # Shared types from the library (PageResult, BoundingBox)
+      - path: ../PageResult.swift
+      # Pipeline source — copied by the daemon before each build
+      - path: BookSnapHarness/Pipeline
+        optional: true
+    settings:
+      SWIFT_VERSION: "5.9"
+      PRODUCT_BUNDLE_IDENTIFIER: dev.booksnap.harness
+      GENERATE_INFOPLIST_FILE: YES
+      CODE_SIGNING_ALLOWED: NO
+
+  BookSnapHarnessTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - BookSnapHarnessTests
+    dependencies:
+      - target: BookSnapHarness
+    settings:
+      SWIFT_VERSION: "5.9"
+      GENERATE_INFOPLIST_FILE: YES
+      CODE_SIGNING_ALLOWED: NO
+      TEST_HOST: "$(BUILT_PRODUCTS_DIR)/BookSnapHarness.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BookSnapHarness"
+      BUNDLE_LOADER: "$(TEST_HOST)"

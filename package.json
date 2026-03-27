@@ -1,0 +1,31 @@
+{
+  "name": "booksnap",
+  "version": "0.1.0",
+  "description": "On-device book page scanning — preprocessing, OCR, and text assembly (Android, iOS, React Native)",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "ocr",
+    "book-scanning",
+    "text-recognition",
+    "document-scanning"
+  ],
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

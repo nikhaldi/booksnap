@@ -1,0 +1,6 @@
+DerivedData/
+BookSnapHarness.xcodeproj/
+
+# Pipeline code is copied here by the daemon before each build.
+# Source of truth is ios/BookSnapPipeline.swift.
+BookSnapHarness/Pipeline/

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "booksnap-labs"
+version = "0.1.0"
+description = "Shared utilities for booksnap research labs"
+requires-python = ">=3.12"
+dependencies = [
+    "autoresearch-lab>=0.2,<0.3",
+    "jiwer>=3.0",
+    "Pillow>=10.0",
+]
+
+[project.scripts]
+visualize-bounds = "booksnap_labs.tools.visualize_bounds:main"
+diff-report = "booksnap_labs.tools.diff_report:main"

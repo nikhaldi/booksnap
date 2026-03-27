@@ -1,0 +1,10 @@
+{
+  "name": "booksnap",
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["BookSnapModule"]
+  },
+  "android": {
+    "modules": ["dev.booksnap.module.BookSnapModule"]
+  }
+}

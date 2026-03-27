@@ -1,0 +1,4 @@
+.verdicts/
+.venv/
+.last_eval.json
+viz/

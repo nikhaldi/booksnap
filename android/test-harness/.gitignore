@@ -1,0 +1,12 @@
+build/
+.gradle/
+local.properties
+
+# Pipeline code is copied here by the daemon before each build.
+# Source of truth is android/src/main/java/com/booksnap/pipeline/.
+app/src/pipeline/
+
+# Hunspell dictionaries — downloaded via scripts/download-dictionaries.sh
+# Build copies from hunspell-all/ to hunspell/ based on HUNSPELL_LANGS.
+app/src/main/assets/hunspell-all/
+app/src/main/assets/hunspell/

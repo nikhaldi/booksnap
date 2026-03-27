@@ -1,0 +1,15 @@
+[lab]
+name = "booksnap-ios"
+pipeline_dir = "../pipeline"
+
+[backend]
+module = "backends/ios.py"
+class = "IOSBackend"
+
+[sandbox]
+dockerfile = "Dockerfile"
+build_context = "../.."
+
+[backend.host_service]
+command = "python simulator_daemon.py --port 9200 --data-dir $ARL_DATA_DIR --pipeline-dir $ARL_PIPELINE_DIR"
+port = 9200

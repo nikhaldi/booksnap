@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BookSnap Dataset",
+  "description": "Ground truth dataset for book page OCR evaluation",
+  "type": "object",
+  "required": ["images"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable dataset name"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "text"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique image identifier"
+          },
+          "path": {
+            "type": "string",
+            "description": "Relative path to image file within the dataset directory"
+          },
+          "text": {
+            "type": "string",
+            "description": "Expected extracted text (ground truth)"
+          },
+          "language": {
+            "type": "string",
+            "description": "ISO 639-1 language code (e.g. 'en', 'fr', 'de')"
+          },
+          "page_number": {
+            "type": "integer",
+            "description": "Expected page number if visible on the page"
+          },
+          "header": {
+            "type": "string",
+            "description": "Expected running header (book title or chapter name from margin)"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "flat",
+                "skew",
+                "curved",
+                "low_light",
+                "partial_occlusion",
+                "multi_column",
+                "noise",
+                "blurry"
+              ]
+            },
+            "description": "Photo conditions present in this image"
+          }
+        }
+      }
+    }
+  }
+}
