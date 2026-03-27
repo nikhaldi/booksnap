@@ -126,8 +126,9 @@ public class BookSnapPipeline {
       let firstChar = trimmedCurr.first ?? " "
 
       // Keep paragraph breaks where sentence ends and new paragraph begins
-      let sentenceEnders: Set<Character> = [".", "!", "?", ":", "\"", "\u{201D}", "\u{00BB}"]
-      let paragraphStart = firstChar.isUppercase || firstChar == "\"" || firstChar == "\u{201C}" || firstChar == "\u{00AB}"
+      // Include both « and » as enders/starters for French/Italian and German dialogue
+      let sentenceEnders: Set<Character> = [".", "!", "?", ":", "\"", "\u{201D}", "\u{00BB}", "\u{00AB}"]
+      let paragraphStart = firstChar.isUppercase || firstChar == "\"" || firstChar == "\u{201C}" || firstChar == "\u{00AB}" || firstChar == "\u{00BB}"
 
       if sentenceEnders.contains(lastChar) && paragraphStart {
         result += "\n" + line
