@@ -39,14 +39,17 @@ public class BookSnapPipeline {
     // Filter out facing-page text by keeping only the dominant text column
     let filtered = Self.filterFacingPage(observations)
 
-    let lines = filtered
+    // Filter out running headers/footers from body text
+    let bodyObs = Self.filterRunningHeaders(filtered)
+
+    let lines = bodyObs
       .compactMap { $0.topCandidates(1).first?.string }
 
     let text = Self.joinLines(lines)
 
     let imageWidth = CGFloat(cgImage.width)
     let imageHeight = CGFloat(cgImage.height)
-    let textBounds = Self.computeUnionBounds(filtered, imageWidth: imageWidth, imageHeight: imageHeight)
+    let textBounds = Self.computeUnionBounds(bodyObs, imageWidth: imageWidth, imageHeight: imageHeight)
 
     // Extract page number from all observations (page numbers may be outside main text column)
     let (pageNumber, pageNumberBounds) = Self.extractPageNumber(
@@ -143,6 +146,36 @@ public class BookSnapPipeline {
       let obsWidth = obs.boundingBox.size.width
       guard obsWidth > 0 else { return false }
       return overlap / obsWidth > 0.3
+    }
+
+    return filtered.isEmpty ? observations : filtered
+  }
+
+  /// Filter out running headers/footers — short lines in the top/bottom margins.
+  /// Only removes observations that are in the margin AND narrower than most body text.
+  private static func filterRunningHeaders(
+    _ observations: [VNRecognizedTextObservation]
+  ) -> [VNRecognizedTextObservation] {
+    guard observations.count > 3 else { return observations }
+
+    let marginThreshold: CGFloat = 0.10  // top/bottom 10%
+
+    // Compute median width of all observations
+    let widths = observations.map { $0.boundingBox.size.width }.sorted()
+    let medianWidth = widths[widths.count / 2]
+
+    // Remove observations that are in the margin AND narrower than 70% of median body width
+    let widthThreshold = medianWidth * 0.70
+
+    let filtered = observations.filter { obs in
+      let bbox = obs.boundingBox
+      let midY = bbox.origin.y + bbox.size.height / 2.0
+      let inMargin = midY < marginThreshold || midY > (1.0 - marginThreshold)
+
+      if inMargin && bbox.size.width < widthThreshold {
+        return false  // Remove: it's a short line in the margin (running header/footer)
+      }
+      return true
     }
 
     return filtered.isEmpty ? observations : filtered
