@@ -20,3 +20,4 @@ exp_023	2026-03-27T12:51:54.717790+00:00	0.024364	{}	no	reverted	Increase header
 exp_024	2026-03-27T12:54:41.472885+00:00	0.020503	{}	yes	697831b41f532d2cfa668c85dc5f8bb26d8e97f5	Fallback page number extraction from first/last body observation when margin detection fails. Page accuracy: 0.794->0.853 (+2). CER unchanged.
 exp_025	2026-03-27T13:01:01.888438+00:00	0.019915	{}	yes	09171e3dafb6a55cb7b95e34894f3024c866b54b	Fallback page number: also run when primary finds <10, and scan first 3 + last 2 observations. Page accuracy: 0.853->0.882.
 exp_026	2026-03-27T13:03:50.516073+00:00	0.019870	{}	yes	93d5872859a5578fb04ca97159a58da01f5cb0cb	Tighten facing-page overlap threshold from 0.3 to 0.35. Small CER improvement: 0.01792->0.01787.
+exp_027	2026-03-27T13:05:51.011298+00:00	0.019330	{}	yes	0acc00901f81878dc69ff29ed23ae5be4a3138be	Strip running header prefix from body text when pattern [title words] [number] [lowercase body] is detected. CER: 0.01787->0.01732.

@@ -49,7 +49,10 @@ public class BookSnapPipeline {
     let lines = bodyObs
       .compactMap { $0.topCandidates(1).first?.string }
 
-    let text = Self.joinLines(lines)
+    var text = Self.joinLines(lines)
+
+    // Strip running header prefix if the text starts with a header-like pattern
+    text = Self.stripRunningHeader(text)
 
     let imageWidth = CGFloat(cgImage.width)
     let imageHeight = CGFloat(cgImage.height)
@@ -136,6 +139,63 @@ public class BookSnapPipeline {
       }
     }
     return result
+  }
+
+  /// Strip a running header prefix from the body text.
+  /// Detects patterns like "Title 109 body text..." or "109• Title body text..."
+  /// where a short header with a page number precedes the actual body text.
+  private static func stripRunningHeader(_ text: String) -> String {
+    let words = text.split(separator: " ", maxSplits: 10).map(String.init)
+    guard words.count > 5 else { return text }
+
+    // Look for a page number in the first 5 words
+    for i in 0..<min(5, words.count) {
+      if let _ = parsePageNum(words[i]) {
+        // Found a number at position i. Check if text after it looks like body text.
+        // A running header typically has: [title words] [number] [body text starts]
+        // or: [number] [title words] [body text starts]
+        // Body text usually starts with a lowercase word or continues a sentence.
+        let afterIdx = i + 1
+        guard afterIdx < words.count else { continue }
+
+        // Check if there's a clear boundary: the word after the number region
+        // starts with lowercase, suggesting it's body text starting mid-sentence
+        let bodyStartIdx: Int
+        if i == 0 {
+          // Number is first: "109 Title Text body..." or "109• Title body..."
+          // Find where title-case words end
+          var j = 1
+          while j < min(6, words.count) {
+            let word = words[j]
+            let firstLetter = word.first(where: { $0.isLetter })
+            if let fl = firstLetter, fl.isLowercase {
+              break
+            }
+            j += 1
+          }
+          bodyStartIdx = j
+        } else {
+          // Number is in the middle: "Title 109 body..."
+          bodyStartIdx = afterIdx
+        }
+
+        guard bodyStartIdx < words.count && bodyStartIdx <= 6 else { continue }
+
+        // Verify: the word at bodyStartIdx should start lowercase (mid-sentence)
+        let bodyWord = words[bodyStartIdx]
+        let firstLetter = bodyWord.first(where: { $0.isLetter })
+        if let fl = firstLetter, fl.isLowercase {
+          // Strip the header prefix
+          let headerWords = words[0..<bodyStartIdx]
+          let headerPrefix = headerWords.joined(separator: " ") + " "
+          if text.hasPrefix(headerPrefix) {
+            return String(text.dropFirst(headerPrefix.count))
+          }
+        }
+      }
+    }
+
+    return text
   }
 
   /// Filter observations to keep only the dominant page (right or left).
