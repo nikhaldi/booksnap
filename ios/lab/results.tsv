@@ -18,3 +18,4 @@ exp_020	2026-03-27T12:45:19.003153+00:00	0.022820	{}	no	reverted	Filter low-conf
 exp_021	2026-03-27T12:47:19.576015+00:00	0.021680	{}	yes	58e1c5dcafc6543b6d0f48c49442d9269264811a	Expand header filter margin from 10% to 12%. CER improved: 0.0191->0.0179. Catches more running headers.
 exp_023	2026-03-27T12:51:54.717790+00:00	0.024364	{}	no	reverted	Increase header filter width threshold from 70% to 80%. Regressed - too aggressive, removes short body text lines in margins.
 exp_024	2026-03-27T12:54:41.472885+00:00	0.020503	{}	yes	697831b41f532d2cfa668c85dc5f8bb26d8e97f5	Fallback page number extraction from first/last body observation when margin detection fails. Page accuracy: 0.794->0.853 (+2). CER unchanged.
+exp_025	2026-03-27T13:01:01.888438+00:00	0.019915	{}	yes	09171e3dafb6a55cb7b95e34894f3024c866b54b	Fallback page number: also run when primary finds <10, and scan first 3 + last 2 observations. Page accuracy: 0.853->0.882.

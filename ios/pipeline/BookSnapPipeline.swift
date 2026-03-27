@@ -60,37 +60,30 @@ public class BookSnapPipeline {
       from: observations, imageWidth: imageWidth, imageHeight: imageHeight
     )
 
-    // Fallback: if no page number found in margins, check first/last body observations
-    // which may contain a merged running header with page number
-    if pageNumber == nil {
-      let fallbackObs = [bodyObs.first, bodyObs.last].compactMap { $0 }
+    // Fallback: if no page number found in margins (or found a suspiciously small one),
+    // check first/last body observations for embedded page numbers from merged headers.
+    // Running headers often appear as "Title 109" or "109 Title" at start/end of body text.
+    if pageNumber == nil || (pageNumber ?? 0) < 10 {
+      let fallbackObs = (Array(bodyObs.prefix(3)) + Array(bodyObs.suffix(2))).compactMap { $0 as VNRecognizedTextObservation? }
       for obs in fallbackObs {
         guard let text = obs.topCandidates(1).first?.string else { continue }
         let words = text.trimmingCharacters(in: .whitespaces).split(separator: " ").map(String.init)
-        // Check first word
-        if let first = words.first, let num = Self.parsePageNum(first), num >= 10 {
-          pageNumber = num
-          let bbox = obs.boundingBox
-          pageNumberBounds = BoundingBox(
-            x: Int(bbox.origin.x * imageWidth),
-            y: Int((1.0 - bbox.origin.y - bbox.size.height) * imageHeight),
-            width: Int(bbox.size.width * imageWidth),
-            height: Int(bbox.size.height * imageHeight)
-          )
-          break
+        // Scan first 5 words and last 3 words for a page number
+        let checkWords = Array(words.prefix(5)) + Array(words.suffix(3))
+        for word in checkWords {
+          if let num = Self.parsePageNum(word), num >= 10 {
+            pageNumber = num
+            let bbox = obs.boundingBox
+            pageNumberBounds = BoundingBox(
+              x: Int(bbox.origin.x * imageWidth),
+              y: Int((1.0 - bbox.origin.y - bbox.size.height) * imageHeight),
+              width: Int(bbox.size.width * imageWidth),
+              height: Int(bbox.size.height * imageHeight)
+            )
+            break
+          }
         }
-        // Check last word
-        if let last = words.last, let num = Self.parsePageNum(last), num >= 10 {
-          pageNumber = num
-          let bbox = obs.boundingBox
-          pageNumberBounds = BoundingBox(
-            x: Int(bbox.origin.x * imageWidth),
-            y: Int((1.0 - bbox.origin.y - bbox.size.height) * imageHeight),
-            width: Int(bbox.size.width * imageWidth),
-            height: Int(bbox.size.height * imageHeight)
-          )
-          break
-        }
+        if pageNumber != nil && (pageNumber ?? 0) >= 10 { break }
       }
     }
 
