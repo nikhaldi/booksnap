@@ -176,7 +176,7 @@ public class BookSnapPipeline {
       let overlap = max(0, overlapRight - overlapLeft)
       let obsWidth = obs.boundingBox.size.width
       guard obsWidth > 0 else { return false }
-      return overlap / obsWidth > 0.3
+      return overlap / obsWidth > 0.35
     }
 
     return filtered.isEmpty ? observations : filtered
