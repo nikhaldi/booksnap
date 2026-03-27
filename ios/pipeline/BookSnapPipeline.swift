@@ -36,15 +36,59 @@ public class BookSnapPipeline {
       throw PipelineError.recognitionFailed
     }
 
-    let text = observations
+    let lines = observations
       .compactMap { $0.topCandidates(1).first?.string }
-      .joined(separator: "\n")
+
+    let text = Self.joinLines(lines)
 
     let imageWidth = CGFloat(cgImage.width)
     let imageHeight = CGFloat(cgImage.height)
     let textBounds = Self.computeUnionBounds(observations, imageWidth: imageWidth, imageHeight: imageHeight)
 
     return PageResult(text: text, textBounds: textBounds)
+  }
+
+  /// Join OCR lines into flowing paragraphs, resolving end-of-line hyphenation.
+  /// Preserves paragraph breaks (empty lines or lines ending with sentence-ending punctuation
+  /// followed by a line starting with a capital letter or quote).
+  private static func joinLines(_ lines: [String]) -> String {
+    guard !lines.isEmpty else { return "" }
+
+    var result = ""
+    for (i, line) in lines.enumerated() {
+      if i == 0 {
+        result = line
+        continue
+      }
+
+      let prevLine = lines[i - 1]
+
+      // Detect paragraph break: previous line ends a sentence and current starts with uppercase/quote
+      let trimmedPrev = prevLine.trimmingCharacters(in: .whitespaces)
+      let trimmedCurr = line.trimmingCharacters(in: .whitespaces)
+
+      if trimmedPrev.isEmpty || trimmedCurr.isEmpty {
+        result += "\n" + line
+        continue
+      }
+
+      let lastChar = trimmedPrev.last ?? " "
+      let firstChar = trimmedCurr.first ?? " "
+
+      // Keep paragraph breaks where sentence ends and new paragraph begins
+      let sentenceEnders: Set<Character> = [".", "!", "?", "\"", "\u{201D}", "\u{00BB}"]
+      let paragraphStart = firstChar.isUppercase || firstChar == "\"" || firstChar == "\u{201C}" || firstChar == "\u{00AB}"
+
+      if sentenceEnders.contains(lastChar) && paragraphStart {
+        result += "\n" + line
+      } else if trimmedPrev.hasSuffix("-") && !trimmedPrev.hasSuffix("--") && !trimmedPrev.hasSuffix(" -") {
+        // Resolve end-of-line hyphenation: remove the hyphen and join with next line
+        result = String(result.dropLast()) + line
+      } else {
+        result += " " + line
+      }
+    }
+    return result
   }
 
   private static func computeUnionBounds(

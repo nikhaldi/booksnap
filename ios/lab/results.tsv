@@ -1,0 +1,2 @@
+experiment_id	timestamp	score	metrics	kept	commit_sha	notes
+exp_001	2026-03-27T10:29:59.837978+00:00	0.113285	{}	yes	f00bb9dabf4a956ce45efcdae9042e4516ff23e4	Join OCR lines into paragraphs with space separator and resolve end-of-line hyphenation. CER improved from 0.1107 to 0.0952.
