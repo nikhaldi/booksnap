@@ -28,7 +28,7 @@ public class BookSnapModule: Module {
     }
   }
 
-  private func boundsToMap(_ b: BoundingBox) -> [String: Int] {
-    ["x": b.x, "y": b.y, "width": b.width, "height": b.height]
+  private func boundsToMap(_ bounds: BoundingBox) -> [String: Int] {
+    ["x": bounds.x, "y": bounds.y, "width": bounds.width, "height": bounds.height]
   }
 }

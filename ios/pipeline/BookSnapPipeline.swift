@@ -67,7 +67,8 @@ public class BookSnapPipeline {
     // check first/last body observations for embedded page numbers from merged headers.
     // Running headers often appear as "Title 109" or "109 Title" at start/end of body text.
     if pageNumber == nil || (pageNumber ?? 0) < 10 {
-      let fallbackObs = (Array(bodyObs.prefix(3)) + Array(bodyObs.suffix(2))).compactMap { $0 as VNRecognizedTextObservation? }
+      let fallbackObs = (Array(bodyObs.prefix(3)) + Array(bodyObs.suffix(2)))
+        .compactMap { $0 as VNRecognizedTextObservation? }
       for obs in fallbackObs {
         guard let text = obs.topCandidates(1).first?.string else { continue }
         let words = text.trimmingCharacters(in: .whitespaces).split(separator: " ").map(String.init)
@@ -91,8 +92,8 @@ public class BookSnapPipeline {
     }
 
     // Strip trailing page number from body text if Vision merged it with the last line
-    if let pn = pageNumber {
-      let pnStr = String(pn)
+    if let pageNum = pageNumber {
+      let pnStr = String(pageNum)
       let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
       if trimmed.hasSuffix(pnStr) {
         let beforeIdx = trimmed.index(trimmed.endIndex, offsetBy: -pnStr.count)
@@ -123,13 +124,13 @@ public class BookSnapPipeline {
     guard !lines.isEmpty else { return "" }
 
     var result = ""
-    for (i, line) in lines.enumerated() {
-      if i == 0 {
+    for (index, line) in lines.enumerated() {
+      if index == 0 {
         result = line
         continue
       }
 
-      let prevLine = lines[i - 1]
+      let prevLine = lines[index - 1]
 
       // Detect paragraph break: previous line ends a sentence and current starts with uppercase/quote
       let trimmedPrev = prevLine.trimmingCharacters(in: .whitespaces)
@@ -146,7 +147,8 @@ public class BookSnapPipeline {
       // Keep paragraph breaks where sentence ends and new paragraph begins
       // Include both « and » as enders/starters for French/Italian and German dialogue
       let sentenceEnders: Set<Character> = [".", "!", "?", ":", "\"", "\u{201D}", "\u{00BB}", "\u{00AB}"]
-      let paragraphStart = firstChar.isUppercase || firstChar == "\"" || firstChar == "\u{201C}" || firstChar == "\u{00AB}" || firstChar == "\u{00BB}"
+      let paragraphStarters: Set<Character> = ["\"", "\u{201C}", "\u{00AB}", "\u{00BB}"]
+      let paragraphStart = firstChar.isUppercase || paragraphStarters.contains(firstChar)
 
       if sentenceEnders.contains(lastChar) && paragraphStart {
         result += "\n" + line
@@ -168,31 +170,31 @@ public class BookSnapPipeline {
     guard words.count > 5 else { return text }
 
     // Look for a page number in the first 5 words
-    for i in 0..<min(5, words.count) {
-      if let _ = parsePageNum(words[i]) {
+    for idx in 0..<min(5, words.count) {
+      if parsePageNum(words[idx]) != nil {
         // Found a number at position i. Check if text after it looks like body text.
         // A running header typically has: [title words] [number] [body text starts]
         // or: [number] [title words] [body text starts]
         // Body text usually starts with a lowercase word or continues a sentence.
-        let afterIdx = i + 1
+        let afterIdx = idx + 1
         guard afterIdx < words.count else { continue }
 
         // Check if there's a clear boundary: the word after the number region
         // starts with lowercase, suggesting it's body text starting mid-sentence
         let bodyStartIdx: Int
-        if i == 0 {
+        if idx == 0 {
           // Number is first: "109 Title Text body..." or "109• Title body..."
           // Find where title-case words end
-          var j = 1
-          while j < min(6, words.count) {
-            let word = words[j]
-            let firstLetter = word.first(where: { $0.isLetter })
-            if let fl = firstLetter, fl.isLowercase {
+          var scan = 1
+          while scan < min(6, words.count) {
+            let word = words[scan]
+            let letter = word.first(where: { $0.isLetter })
+            if let letter, letter.isLowercase {
               break
             }
-            j += 1
+            scan += 1
           }
-          bodyStartIdx = j
+          bodyStartIdx = scan
         } else {
           // Number is in the middle: "Title 109 body..."
           bodyStartIdx = afterIdx
@@ -202,8 +204,8 @@ public class BookSnapPipeline {
 
         // Verify: the word at bodyStartIdx should start lowercase (mid-sentence)
         let bodyWord = words[bodyStartIdx]
-        let firstLetter = bodyWord.first(where: { $0.isLetter })
-        if let fl = firstLetter, fl.isLowercase {
+        let letter = bodyWord.first(where: { $0.isLetter })
+        if let letter, letter.isLowercase {
           // Strip the header prefix
           let headerWords = words[0..<bodyStartIdx]
           let headerPrefix = headerWords.joined(separator: " ") + " "
@@ -307,12 +309,12 @@ public class BookSnapPipeline {
       let bbox = obs.boundingBox
       let x = bbox.origin.x * imageWidth
       let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
-      let w = bbox.size.width * imageWidth
-      let h = bbox.size.height * imageHeight
+      let width = bbox.size.width * imageWidth
+      let height = bbox.size.height * imageHeight
       minX = min(minX, x)
       minY = min(minY, y)
-      maxX = max(maxX, x + w)
-      maxY = max(maxY, y + h)
+      maxX = max(maxX, x + width)
+      maxY = max(maxY, y + height)
     }
 
     return BoundingBox(
@@ -375,8 +377,8 @@ public class BookSnapPipeline {
       }
 
       // Try any number token in the line (e.g. "TITLE • 265")
-      for i in 1..<words.count {
-        if let num = parsePageNum(words[i]) {
+      for idx in 1..<words.count {
+        if let num = parsePageNum(words[idx]) {
           candidates.append((num, obs, false))
           break
         }
@@ -393,10 +395,10 @@ public class BookSnapPipeline {
     let standaloneGood = candidates.filter { $0.2 && $0.0 >= 10 }
     let headerNums = candidates.filter { !$0.2 }
 
-    if let s = standaloneGood.first {
-      chosen = s
-    } else if let h = headerNums.first {
-      chosen = h
+    if let standalone = standaloneGood.first {
+      chosen = standalone
+    } else if let header = headerNums.first {
+      chosen = header
     } else {
       chosen = candidates.first!
     }
@@ -404,9 +406,9 @@ public class BookSnapPipeline {
     let bbox = chosen.1.boundingBox
     let x = bbox.origin.x * imageWidth
     let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
-    let w = bbox.size.width * imageWidth
-    let h = bbox.size.height * imageHeight
-    let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(w), height: Int(h))
+    let width = bbox.size.width * imageWidth
+    let height = bbox.size.height * imageHeight
+    let bounds = BoundingBox(x: Int(x), y: Int(y), width: Int(width), height: Int(height))
     return (chosen.0, bounds)
   }
 

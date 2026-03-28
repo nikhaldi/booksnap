@@ -1,0 +1,11 @@
+node_modules
+build/
+*.tsbuildinfo
+.gradle/
+local.properties
+.venv/
+__pycache__/
+*.log
+.DS_Store
+android/scripts/.ktlint-*
+ios/scripts/.swiftlint-*

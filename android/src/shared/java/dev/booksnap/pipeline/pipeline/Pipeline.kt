@@ -18,7 +18,10 @@ interface Pipeline {
      * @param options Optional configuration. Known keys:
      *   - "spellCheck" (Boolean, default true): enable/disable spell correction.
      */
-    suspend fun initialize(context: Context, options: Map<String, Any> = emptyMap())
+    suspend fun initialize(
+        context: Context,
+        options: Map<String, Any> = emptyMap(),
+    )
 
     /**
      * Process a single image file and return the extracted page content.

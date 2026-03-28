@@ -3,13 +3,11 @@ package dev.booksnap.pipeline
 import android.graphics.Bitmap
 import android.graphics.Rect
 
-/**
- * Platform-agnostic OCR result types and engine interface.
- *
- * Decouples the pipeline logic (filtering, ordering, assembly, spell check)
- * from the OCR engine (ML Kit, Tesseract, etc.), making the pipeline
- * testable on JVM with mocked OCR output.
- */
+// Platform-agnostic OCR result types and engine interface.
+//
+// Decouples the pipeline logic (filtering, ordering, assembly, spell check)
+// from the OCR engine (ML Kit, Tesseract, etc.), making the pipeline
+// testable on JVM with mocked OCR output.
 
 /** A single line of recognized text with its bounding box. */
 data class OcrLine(

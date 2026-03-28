@@ -4,7 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,7 +22,6 @@ import org.robolectric.RuntimeEnvironment
  */
 @RunWith(RobolectricTestRunner::class)
 class BookSnapPipelineTest {
-
     companion object {
         @JvmStatic
         @BeforeClass
@@ -44,43 +46,104 @@ class BookSnapPipelineTest {
     // -- Contract tests --
 
     @Test
-    fun `processImage returns empty text for missing file`() = runTest {
-        val pipeline = BookSnapPipeline(ocrEngine = emptyMockEngine(), languageDetector = stubLangDetector)
-        pipeline.initialize(RuntimeEnvironment.getApplication())
+    fun `processImage returns empty text for missing file`() =
+        runTest {
+            val pipeline = BookSnapPipeline(ocrEngine = emptyMockEngine(), languageDetector = stubLangDetector)
+            pipeline.initialize(RuntimeEnvironment.getApplication())
 
-        try {
-            val result = pipeline.processImage("/nonexistent/path.jpg")
-            assertEquals("", result.text)
-        } catch (e: java.io.FileNotFoundException) {
-            // Expected — ExifInterface throws for missing files
+            try {
+                val result = pipeline.processImage("/nonexistent/path.jpg")
+                assertEquals("", result.text)
+            } catch (e: java.io.FileNotFoundException) {
+                // Expected — ExifInterface throws for missing files
+            }
         }
-    }
 
     @Test
-    fun `processImage returns empty text for empty OCR result`() = runTest {
-        val pipeline = createPipeline(emptyMockEngine())
+    fun `processImage returns empty text for empty OCR result`() =
+        runTest {
+            val pipeline = createPipeline(emptyMockEngine())
 
-        val result = pipeline.processImage(testImagePath())
-        assertEquals("", result.text)
-    }
+            val result = pipeline.processImage(testImagePath())
+            assertEquals("", result.text)
+        }
 
     @Test
-    fun `processImage returns PageResult with text and bounds from OCR`() = runTest {
-        val engine = mockEngineWithBlocks(
-            listOf(
-                ocrBlock("Hello world.", Rect(50, 300, 900, 340)),
-                ocrBlock("Second line.", Rect(50, 360, 900, 400)),
-            )
-        )
-        val pipeline = createPipeline(engine)
+    fun `processImage returns PageResult with text and bounds from OCR`() =
+        runTest {
+            val engine =
+                mockEngineWithBlocks(
+                    listOf(
+                        ocrBlock("Hello world.", Rect(50, 300, 900, 340)),
+                        ocrBlock("Second line.", Rect(50, 360, 900, 400)),
+                    ),
+                )
+            val pipeline = createPipeline(engine)
 
-        val result = pipeline.processImage(testImagePath())
-        assertTrue("Expected non-blank text", result.text.isNotBlank())
-        assertTrue("Should contain first block text", result.text.contains("Hello world"))
-        assertTrue("Should contain second block text", result.text.contains("Second line"))
+            val result = pipeline.processImage(testImagePath())
+            assertTrue("Expected non-blank text", result.text.isNotBlank())
+            assertTrue("Should contain first block text", result.text.contains("Hello world"))
+            assertTrue("Should contain second block text", result.text.contains("Second line"))
 
-        assertNotNull("textBounds should not be null", result.textBounds)
-    }
+            // textBounds should be the union of all line bounding boxes
+            assertEquals("textBounds.x", 50, result.textBounds.x)
+            assertEquals("textBounds.y", 300, result.textBounds.y)
+            assertEquals("textBounds.width", 850, result.textBounds.width)
+            assertEquals("textBounds.height", 100, result.textBounds.height)
+        }
+
+    @Test
+    fun `extracts page number and its bounding box`() =
+        runTest {
+            val pageNumRect = Rect(450, 950, 480, 970)
+            val engine =
+                mockEngineWithBlocks(
+                    listOf(
+                        ocrBlock("Some body text on the page.", Rect(50, 300, 900, 340)),
+                        ocrBlock("More body text continues here.", Rect(50, 360, 900, 400)),
+                        ocrBlock("42", pageNumRect),
+                    ),
+                )
+            val pipeline = createPipeline(engine)
+
+            val result = pipeline.processImage(testImagePath())
+
+            assertEquals("Page number should be 42", 42, result.pageNumber)
+            assertNotNull("pageNumberBounds should not be null", result.pageNumberBounds)
+            assertEquals("pageNumberBounds.x", pageNumRect.left, result.pageNumberBounds!!.x)
+            assertEquals("pageNumberBounds.y", pageNumRect.top, result.pageNumberBounds!!.y)
+            assertEquals("pageNumberBounds.width", pageNumRect.width(), result.pageNumberBounds!!.width)
+            assertEquals("pageNumberBounds.height", pageNumRect.height(), result.pageNumberBounds!!.height)
+
+            // Page number text should not appear in the body text
+            assertFalse("Body text should not contain page number", result.text.contains("42"))
+        }
+
+    // -- Spell correction --
+
+    @Test
+    fun `spell correction English`() =
+        runTest {
+            assertSpellCorrection("en", "en", "The houze was very large.", "houze", "house")
+        }
+
+    @Test
+    fun `spell correction French`() =
+        runTest {
+            assertSpellCorrection("fr", "fr", "La maizon est très belle.", "maizon", "maison")
+        }
+
+    @Test
+    fun `spell correction German`() =
+        runTest {
+            assertSpellCorrection("de", "de", "Die Geschichze ist lang.", "Geschichze", "Geschichte")
+        }
+
+    @Test
+    fun `spell correction Italian`() =
+        runTest {
+            assertSpellCorrection("it", "it", "La famigkia era grande.", "famigkia", "famiglia")
+        }
 
     // -- Helpers --
 
@@ -94,9 +157,10 @@ class BookSnapPipelineTest {
         return file.absolutePath
     }
 
-    private val stubLangDetector = object : LanguageDetector {
-        override suspend fun identifyLanguage(text: String) = "und"
-    }
+    private val stubLangDetector =
+        object : LanguageDetector {
+            override suspend fun identifyLanguage(text: String) = "und"
+        }
 
     private suspend fun createPipeline(engine: OcrEngine): BookSnapPipeline {
         val pipeline = BookSnapPipeline(ocrEngine = engine, languageDetector = stubLangDetector)
@@ -105,19 +169,56 @@ class BookSnapPipelineTest {
         return pipeline
     }
 
-    private fun emptyMockEngine() = object : OcrEngine {
-        override suspend fun recognize(bitmap: Bitmap) = emptyList<OcrBlock>()
+    private fun emptyMockEngine() =
+        object : OcrEngine {
+            override suspend fun recognize(bitmap: Bitmap) = emptyList<OcrBlock>()
+        }
+
+    private fun mockEngineWithBlocks(blocks: List<OcrBlock>) =
+        object : OcrEngine {
+            override suspend fun recognize(bitmap: Bitmap) = blocks
+        }
+
+    private suspend fun assertSpellCorrection(
+        language: String,
+        hunspellLangs: String,
+        inputText: String,
+        misspelled: String,
+        corrected: String,
+    ) {
+        val langDetector =
+            object : LanguageDetector {
+                override suspend fun identifyLanguage(text: String) = language
+            }
+        val engine =
+            mockEngineWithBlocks(
+                listOf(ocrBlock(inputText, Rect(50, 300, 900, 340))),
+            )
+        val pipeline = BookSnapPipeline(ocrEngine = engine, languageDetector = langDetector)
+        pipeline.initialize(
+            RuntimeEnvironment.getApplication(),
+            mapOf("spellCheck" to true, "hunspellLangs" to hunspellLangs),
+        )
+        activePipeline = pipeline
+
+        val result = pipeline.processImage(testImagePath())
+        assertTrue(
+            "[$language] Should correct '$misspelled' to '$corrected': got '${result.text}'",
+            result.text.contains(corrected),
+        )
+        assertFalse(
+            "[$language] Should not contain misspelled '$misspelled'",
+            result.text.contains(misspelled),
+        )
     }
 
-    private fun mockEngineWithBlocks(blocks: List<OcrBlock>) = object : OcrEngine {
-        override suspend fun recognize(bitmap: Bitmap) = blocks
-    }
-
-    private fun ocrBlock(text: String, boundingBox: Rect): OcrBlock {
-        return OcrBlock(
+    private fun ocrBlock(
+        text: String,
+        boundingBox: Rect,
+    ): OcrBlock =
+        OcrBlock(
             text = text,
             boundingBox = boundingBox,
             lines = listOf(OcrLine(text = text, boundingBox = boundingBox)),
         )
-    }
 }
