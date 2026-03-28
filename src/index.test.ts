@@ -33,7 +33,9 @@ describe("scanPage", () => {
 
     await scanPage("/path.jpg", { spellCheck: false });
 
-    expect(mockScanPage).toHaveBeenCalledWith("/path.jpg", { spellCheck: false });
+    expect(mockScanPage).toHaveBeenCalledWith("/path.jpg", {
+      spellCheck: false,
+    });
   });
 
   it("maps native result to ScanResult", async () => {

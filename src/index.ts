@@ -17,7 +17,10 @@ const NativeModule = requireNativeModule("BookSnap");
  * @param options - Optional scanning configuration.
  * @returns Extracted text with paragraph breaks.
  */
-export async function scanPage(uri: string, options?: ScanOptions): Promise<ScanResult> {
+export async function scanPage(
+  uri: string,
+  options?: ScanOptions,
+): Promise<ScanResult> {
   const opts: Record<string, unknown> = {};
   if (options?.spellCheck !== undefined) {
     opts.spellCheck = options.spellCheck;

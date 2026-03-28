@@ -2,16 +2,25 @@
   "name": "react-native-booksnap",
   "version": "0.1.0",
   "description": "Extract text from a photo of a book page taken on a mobile device (Android, iOS, React Native)",
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
     "setup": "pnpm install && bash android/test-harness/scripts/download-dictionaries.sh",
     "test": "vitest run",
-    "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest"
+    "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
   },
   "devDependencies": {
-    "vitest": "^4.0.18",
-    "typescript": "^5"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8.57.2",
+    "vitest": "^4.0.18"
   },
   "keywords": [
     "react-native",
@@ -23,7 +32,6 @@
   ],
   "packageManager": "pnpm@9.15.4",
   "license": "MIT",
-  "dependencies": {},
   "peerDependencies": {
     "expo": "*",
     "expo-modules-core": "*",
