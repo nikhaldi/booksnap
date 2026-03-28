@@ -108,9 +108,19 @@ pnpm run test:android
 
 TODO describe datasets
 
-### Development branches
+### Lab branches
 
-TODO describe branching architecture
+Aside from `main` this repo has 3 significant branches:
+
+- `lab-base`: Starting point for new lab runs. Contains the pipeline scaffolding, test harness, and evaluation infrastructure, but with minimal pipeline logic. Create a branch off of this if you want to run a new research loop from scratch (e.g., with a new dataset or new agent instructions or just because a new AI model came out that may do better (!)).
+- `lab-android`: The Android pipeline as developed by the research agent. Each commit is a kept experiment with its score improvements noted in the commit message. There may be human-authored commits interleaved where human intervention was necessary during development.
+- `lab-ios`: Same as above for the iOS pipeline.
+
+Guidelines for working with branches:
+
+- **Only run the research loop on a lab branch** (never on `main`) as the loop will create a commit for each successful experiment.
+- Before running a research loop on a lab branch it is a good idea to pull from `main` and merge `main` into the lab branch to ensure it is up-to-date. (The `lab-base` branch will be kept in sync by maintainers as much as possible.)
+- To publish changes developed on a lab branch, create a PR that squashes & merges all changes from the lab branch onto `main`. The commit history on lab branches should be preserved as a record of what actually happened in research.
 
 ## License
 
