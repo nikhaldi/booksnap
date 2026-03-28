@@ -21,6 +21,7 @@
     "text-recognition",
     "document-scanning"
   ],
+  "packageManager": "pnpm@9.15.4",
   "license": "MIT",
   "dependencies": {},
   "peerDependencies": {
