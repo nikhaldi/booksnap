@@ -31,7 +31,6 @@ final class OcrBenchmarkTests: XCTestCase {
         let results: [ImageResult]
     }
 
-    // swiftlint:disable:next function_body_length
     func testRunBenchmark() async throws {
         let fileManager = FileManager.default
         let docsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
