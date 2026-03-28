@@ -49,7 +49,7 @@ jobs:
       - run: pnpm run lint:android
       - run: pnpm run test:android
 
-  lint-ios:
+  test-ios:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,3 +58,4 @@ jobs:
           path: ios/scripts/.swiftlint-*
           key: swiftlint-${{ hashFiles('ios/scripts/swiftlint.sh') }}
       - run: bash ios/scripts/swiftlint.sh lint --strict
+      - run: bash ios/test-harness/scripts/run-tests.sh

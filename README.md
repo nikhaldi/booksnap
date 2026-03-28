@@ -102,6 +102,9 @@ pnpm test
 
 # Android unit tests (Robolectric)
 pnpm run test:android
+
+# iOS unit tests (OS X only)
+pnpm run test:ios
 ```
 
 ### Datasets
