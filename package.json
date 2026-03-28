@@ -9,6 +9,7 @@
     "setup": "pnpm install && bash android/test-harness/scripts/download-dictionaries.sh",
     "test": "vitest run",
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
+    "test:ios": "bash ios/test-harness/scripts/run-tests.sh",
     "lint": "eslint src/",
     "lint:android": "bash android/scripts/ktlint.sh",
     "lint:ios": "bash ios/scripts/swiftlint.sh lint --strict",

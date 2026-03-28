@@ -12,7 +12,8 @@ targets:
       - BookSnapHarness
       # Shared types from the library (PageResult, BoundingBox)
       - path: ../PageResult.swift
-      # Pipeline source — copied by the daemon before each build
+      # Pipeline source — copied from ios/pipeline/ before build.
+      # During lab runs the daemon may override this with modified code.
       - path: BookSnapHarness/Pipeline
         optional: true
     settings:
