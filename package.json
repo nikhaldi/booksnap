@@ -10,8 +10,10 @@
     "test": "vitest run",
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
     "lint": "eslint src/",
+    "lint:android": "bash android/scripts/ktlint.sh",
     "format": "prettier --write src/",
-    "format:check": "prettier --check src/"
+    "format:check": "prettier --check src/",
+    "format:android": "bash android/scripts/ktlint.sh -F"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -6,12 +6,9 @@ import kotlinx.coroutines.tasks.await
 
 /** Language detector backed by Google ML Kit Language Identification. */
 class MlKitLanguageDetector : LanguageDetector {
-
     private val identifier: LanguageIdentifier = LanguageIdentification.getClient()
 
-    override suspend fun identifyLanguage(text: String): String {
-        return identifier.identifyLanguage(text).await()
-    }
+    override suspend fun identifyLanguage(text: String): String = identifier.identifyLanguage(text).await()
 
     override fun close() {
         identifier.close()

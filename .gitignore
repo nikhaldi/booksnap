@@ -7,3 +7,4 @@ local.properties
 __pycache__/
 *.log
 .DS_Store
+android/scripts/.ktlint-*

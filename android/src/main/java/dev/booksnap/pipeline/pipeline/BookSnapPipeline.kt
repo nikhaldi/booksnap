@@ -22,18 +22,21 @@ class BookSnapPipeline(
     private val ocrEngine: OcrEngine? = null,
     private val languageDetector: LanguageDetector? = null,
 ) : Pipeline {
-
     private lateinit var engine: OcrEngine
     private var langDetector: LanguageDetector? = null
 
-    override suspend fun initialize(context: Context, options: Map<String, Any>) {
+    override suspend fun initialize(
+        context: Context,
+        options: Map<String, Any>,
+    ) {
         engine = ocrEngine ?: MlKitOcrEngine()
         langDetector = languageDetector ?: MlKitLanguageDetector()
     }
 
     override suspend fun processImage(imagePath: String): PageResult {
-        val rawBitmap = BitmapFactory.decodeFile(imagePath)
-            ?: return PageResult(text = "")
+        val rawBitmap =
+            BitmapFactory.decodeFile(imagePath)
+                ?: return PageResult(text = "")
         val bitmap = applyExifRotation(imagePath, rawBitmap)
 
         val blocks = engine.recognize(bitmap)
@@ -41,18 +44,23 @@ class BookSnapPipeline(
         return PageResult(text = text)
     }
 
-    private fun applyExifRotation(path: String, bitmap: Bitmap): Bitmap {
+    private fun applyExifRotation(
+        path: String,
+        bitmap: Bitmap,
+    ): Bitmap {
         val exif = ExifInterface(path)
-        val orientation = exif.getAttributeInt(
-            ExifInterface.TAG_ORIENTATION,
-            ExifInterface.ORIENTATION_NORMAL
-        )
-        val degrees = when (orientation) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-            else -> return bitmap
-        }
+        val orientation =
+            exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL,
+            )
+        val degrees =
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> return bitmap
+            }
         val matrix = Matrix().apply { postRotate(degrees) }
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }

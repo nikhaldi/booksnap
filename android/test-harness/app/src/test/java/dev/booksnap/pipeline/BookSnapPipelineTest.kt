@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,7 +21,6 @@ import org.robolectric.RuntimeEnvironment
  */
 @RunWith(RobolectricTestRunner::class)
 class BookSnapPipelineTest {
-
     companion object {
         @JvmStatic
         @BeforeClass
@@ -44,43 +45,47 @@ class BookSnapPipelineTest {
     // -- Contract tests --
 
     @Test
-    fun `processImage returns empty text for missing file`() = runTest {
-        val pipeline = BookSnapPipeline(ocrEngine = emptyMockEngine(), languageDetector = stubLangDetector)
-        pipeline.initialize(RuntimeEnvironment.getApplication())
+    fun `processImage returns empty text for missing file`() =
+        runTest {
+            val pipeline = BookSnapPipeline(ocrEngine = emptyMockEngine(), languageDetector = stubLangDetector)
+            pipeline.initialize(RuntimeEnvironment.getApplication())
 
-        try {
-            val result = pipeline.processImage("/nonexistent/path.jpg")
-            assertEquals("", result.text)
-        } catch (e: java.io.FileNotFoundException) {
-            // Expected — ExifInterface throws for missing files
+            try {
+                val result = pipeline.processImage("/nonexistent/path.jpg")
+                assertEquals("", result.text)
+            } catch (e: java.io.FileNotFoundException) {
+                // Expected — ExifInterface throws for missing files
+            }
         }
-    }
 
     @Test
-    fun `processImage returns empty text for empty OCR result`() = runTest {
-        val pipeline = createPipeline(emptyMockEngine())
+    fun `processImage returns empty text for empty OCR result`() =
+        runTest {
+            val pipeline = createPipeline(emptyMockEngine())
 
-        val result = pipeline.processImage(testImagePath())
-        assertEquals("", result.text)
-    }
+            val result = pipeline.processImage(testImagePath())
+            assertEquals("", result.text)
+        }
 
     @Test
-    fun `processImage returns PageResult with text and bounds from OCR`() = runTest {
-        val engine = mockEngineWithBlocks(
-            listOf(
-                ocrBlock("Hello world.", Rect(50, 300, 900, 340)),
-                ocrBlock("Second line.", Rect(50, 360, 900, 400)),
-            )
-        )
-        val pipeline = createPipeline(engine)
+    fun `processImage returns PageResult with text and bounds from OCR`() =
+        runTest {
+            val engine =
+                mockEngineWithBlocks(
+                    listOf(
+                        ocrBlock("Hello world.", Rect(50, 300, 900, 340)),
+                        ocrBlock("Second line.", Rect(50, 360, 900, 400)),
+                    ),
+                )
+            val pipeline = createPipeline(engine)
 
-        val result = pipeline.processImage(testImagePath())
-        assertTrue("Expected non-blank text", result.text.isNotBlank())
-        assertTrue("Should contain first block text", result.text.contains("Hello world"))
-        assertTrue("Should contain second block text", result.text.contains("Second line"))
+            val result = pipeline.processImage(testImagePath())
+            assertTrue("Expected non-blank text", result.text.isNotBlank())
+            assertTrue("Should contain first block text", result.text.contains("Hello world"))
+            assertTrue("Should contain second block text", result.text.contains("Second line"))
 
-        assertNotNull("textBounds should not be null", result.textBounds)
-    }
+            assertNotNull("textBounds should not be null", result.textBounds)
+        }
 
     // -- Helpers --
 
@@ -94,9 +99,10 @@ class BookSnapPipelineTest {
         return file.absolutePath
     }
 
-    private val stubLangDetector = object : LanguageDetector {
-        override suspend fun identifyLanguage(text: String) = "und"
-    }
+    private val stubLangDetector =
+        object : LanguageDetector {
+            override suspend fun identifyLanguage(text: String) = "und"
+        }
 
     private suspend fun createPipeline(engine: OcrEngine): BookSnapPipeline {
         val pipeline = BookSnapPipeline(ocrEngine = engine, languageDetector = stubLangDetector)
@@ -105,19 +111,23 @@ class BookSnapPipelineTest {
         return pipeline
     }
 
-    private fun emptyMockEngine() = object : OcrEngine {
-        override suspend fun recognize(bitmap: Bitmap) = emptyList<OcrBlock>()
-    }
+    private fun emptyMockEngine() =
+        object : OcrEngine {
+            override suspend fun recognize(bitmap: Bitmap) = emptyList<OcrBlock>()
+        }
 
-    private fun mockEngineWithBlocks(blocks: List<OcrBlock>) = object : OcrEngine {
-        override suspend fun recognize(bitmap: Bitmap) = blocks
-    }
+    private fun mockEngineWithBlocks(blocks: List<OcrBlock>) =
+        object : OcrEngine {
+            override suspend fun recognize(bitmap: Bitmap) = blocks
+        }
 
-    private fun ocrBlock(text: String, boundingBox: Rect): OcrBlock {
-        return OcrBlock(
+    private fun ocrBlock(
+        text: String,
+        boundingBox: Rect,
+    ): OcrBlock =
+        OcrBlock(
             text = text,
             boundingBox = boundingBox,
             lines = listOf(OcrLine(text = text, boundingBox = boundingBox)),
         )
-    }
 }

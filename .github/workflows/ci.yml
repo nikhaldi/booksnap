@@ -41,5 +41,10 @@ jobs:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
+      - uses: actions/cache@v4
+        with:
+          path: android/scripts/.ktlint-*
+          key: ktlint-${{ hashFiles('android/scripts/ktlint.sh') }}
       - run: pnpm run setup
+      - run: pnpm run lint:android
       - run: pnpm run test:android

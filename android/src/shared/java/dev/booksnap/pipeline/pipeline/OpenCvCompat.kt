@@ -11,7 +11,6 @@ import org.opencv.core.Mat
  * and manual pixel copying for Bitmap conversion.
  */
 object OpenCvCompat {
-
     private var initialized = false
 
     /** Initialize OpenCV native libs. Safe to call from both Android and JVM tests. */
@@ -21,17 +20,18 @@ object OpenCvCompat {
         // Suppress stderr during the attempt — on JVM tests, OpenCVLoader.initLocal()
         // prints an UnsatisfiedLinkError stack trace before we can catch it.
         val originalErr = System.err
-        val androidLoaded = try {
-            System.setErr(java.io.PrintStream(java.io.OutputStream.nullOutputStream()))
-            val clazz = Class.forName("org.opencv.android.OpenCVLoader")
-            val method = clazz.getMethod("initLocal")
-            method.invoke(null)
-            true
-        } catch (e: Exception) {
-            false
-        } finally {
-            System.setErr(originalErr)
-        }
+        val androidLoaded =
+            try {
+                System.setErr(java.io.PrintStream(java.io.OutputStream.nullOutputStream()))
+                val clazz = Class.forName("org.opencv.android.OpenCVLoader")
+                val method = clazz.getMethod("initLocal")
+                method.invoke(null)
+                true
+            } catch (e: Exception) {
+                false
+            } finally {
+                System.setErr(originalErr)
+            }
         if (androidLoaded) {
             initialized = true
             return
@@ -48,7 +48,10 @@ object OpenCvCompat {
     }
 
     /** Convert a Bitmap to an OpenCV Mat. */
-    fun bitmapToMat(bitmap: Bitmap, mat: Mat) {
+    fun bitmapToMat(
+        bitmap: Bitmap,
+        mat: Mat,
+    ) {
         try {
             val clazz = Class.forName("org.opencv.android.Utils")
             val method = clazz.getMethod("bitmapToMat", Bitmap::class.java, Mat::class.java)
@@ -73,7 +76,10 @@ object OpenCvCompat {
     }
 
     /** Convert an OpenCV Mat to a Bitmap. */
-    fun matToBitmap(mat: Mat, bitmap: Bitmap) {
+    fun matToBitmap(
+        mat: Mat,
+        bitmap: Bitmap,
+    ) {
         try {
             val clazz = Class.forName("org.opencv.android.Utils")
             val method = clazz.getMethod("matToBitmap", Mat::class.java, Bitmap::class.java)
