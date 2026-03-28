@@ -11,7 +11,6 @@
 		5EC5620EC1F805542A970FC1 /* OcrBenchmarkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC51F8CA4D710099EA0FAAF /* OcrBenchmarkTests.swift */; };
 		A1D3AC2CA7D66EC8421876D2 /* BookSnapPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8771FA8329AFE8CF34150C58 /* BookSnapPipelineTests.swift */; };
 		AE67B07FAA209F724F387755 /* PageResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613919A44A7B7A64708E03F2 /* PageResult.swift */; };
-		CD4C7E314F25DF948A5FB6B3 /* PageResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC3E08F29B1DDDB22BE6A4CD /* PageResultTests.swift */; };
 		EB7336C14FAFA1D893406194 /* BookSnapPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B8541D140B30124ED56C4A /* BookSnapPipeline.swift */; };
 /* End PBXBuildFile section */
 
@@ -32,7 +31,6 @@
 		3BC51F8CA4D710099EA0FAAF /* OcrBenchmarkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OcrBenchmarkTests.swift; sourceTree = "<group>"; };
 		613919A44A7B7A64708E03F2 /* PageResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageResult.swift; sourceTree = "<group>"; };
 		8771FA8329AFE8CF34150C58 /* BookSnapPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookSnapPipelineTests.swift; sourceTree = "<group>"; };
-		CC3E08F29B1DDDB22BE6A4CD /* PageResultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageResultTests.swift; sourceTree = "<group>"; };
 		D445288A5E6489EA2B3799AB /* BookSnapHarnessTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BookSnapHarnessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -51,7 +49,6 @@
 			children = (
 				8771FA8329AFE8CF34150C58 /* BookSnapPipelineTests.swift */,
 				3BC51F8CA4D710099EA0FAAF /* OcrBenchmarkTests.swift */,
-				CC3E08F29B1DDDB22BE6A4CD /* PageResultTests.swift */,
 			);
 			path = BookSnapHarnessTests;
 			sourceTree = "<group>";
@@ -178,7 +175,6 @@
 			files = (
 				A1D3AC2CA7D66EC8421876D2 /* BookSnapPipelineTests.swift in Sources */,
 				5EC5620EC1F805542A970FC1 /* OcrBenchmarkTests.swift in Sources */,
-				CD4C7E314F25DF948A5FB6B3 /* PageResultTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
