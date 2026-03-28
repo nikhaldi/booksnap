@@ -11,9 +11,11 @@
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
     "lint": "eslint src/",
     "lint:android": "bash android/scripts/ktlint.sh",
+    "lint:ios": "bash ios/scripts/swiftlint.sh lint --strict",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "format:android": "bash android/scripts/ktlint.sh -F"
+    "format:android": "bash android/scripts/ktlint.sh -F",
+    "format:ios": "bash ios/scripts/swiftlint.sh lint --fix && bash ios/scripts/swiftlint.sh lint --strict"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -48,3 +48,13 @@ jobs:
       - run: pnpm run setup
       - run: pnpm run lint:android
       - run: pnpm run test:android
+
+  lint-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: ios/scripts/.swiftlint-*
+          key: swiftlint-${{ hashFiles('ios/scripts/swiftlint.sh') }}
+      - run: bash ios/scripts/swiftlint.sh lint --strict
