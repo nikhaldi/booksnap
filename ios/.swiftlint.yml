@@ -1,0 +1,19 @@
+included:
+  - .
+excluded:
+  - lab
+  - test-harness/build
+
+identifier_name:
+  allowed_symbols: _
+  excluded:
+    - id
+    - x
+    - y
+
+nesting:
+  type_level: 2
+
+# Swift convention uses trailing commas in multiline collections
+trailing_comma:
+  mandatory_comma: true

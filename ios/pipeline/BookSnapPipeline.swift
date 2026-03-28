@@ -63,12 +63,12 @@ public class BookSnapPipeline {
       let bbox = obs.boundingBox
       let x = bbox.origin.x * imageWidth
       let y = (1.0 - bbox.origin.y - bbox.size.height) * imageHeight
-      let w = bbox.size.width * imageWidth
-      let h = bbox.size.height * imageHeight
+      let width = bbox.size.width * imageWidth
+      let height = bbox.size.height * imageHeight
       minX = min(minX, x)
       minY = min(minY, y)
-      maxX = max(maxX, x + w)
-      maxY = max(maxY, y + h)
+      maxX = max(maxX, x + width)
+      maxY = max(maxY, y + height)
     }
 
     return BoundingBox(
