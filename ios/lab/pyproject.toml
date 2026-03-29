@@ -7,7 +7,7 @@ packages = ["backends"]
 
 [project]
 name = "booksnap-ios-lab"
-version = "0.1.0"
+version = "0.0.0dev"
 description = "Autoresearch lab for BookSnap iOS OCR pipeline"
 requires-python = ">=3.12"
 dependencies = [
