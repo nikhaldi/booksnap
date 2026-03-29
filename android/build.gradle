@@ -1,8 +1,11 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+// Read version from the single source of truth (package.json)
+def packageJson = new groovy.json.JsonSlurper().parse(file("../package.json"))
+
 group = 'dev.booksnap'
-version = '0.1.0'
+version = packageJson.version
 
 buildscript {
   def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
@@ -52,7 +55,7 @@ android {
     minSdkVersion safeExtGet("minSdkVersion", 26)
     targetSdkVersion safeExtGet("targetSdkVersion", 34)
     versionCode 1
-    versionName "0.1.0"
+    versionName packageJson.version
 
     buildConfigField "String", "HUNSPELL_LANGS", "\"${hunspellLangsStr}\""
   }

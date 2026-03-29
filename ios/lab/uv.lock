@@ -17,7 +17,7 @@ wheels = [
 
 [[package]]
 name = "booksnap-ios-lab"
-version = "0.1.0"
+version = "0.0.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "booksnap-labs" },
@@ -28,7 +28,7 @@ requires-dist = [{ name = "booksnap-labs", editable = "../../shared/python" }]
 
 [[package]]
 name = "booksnap-labs"
-version = "0.1.0"
+version = "0.0.0.dev0"
 source = { editable = "../../shared/python" }
 dependencies = [
     { name = "autoresearch-lab" },
