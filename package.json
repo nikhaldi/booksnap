@@ -18,7 +18,8 @@
     "format:android": "bash android/scripts/ktlint.sh -F",
     "format:ios": "bash ios/scripts/swiftlint.sh lint --fix && bash ios/scripts/swiftlint.sh lint --strict",
     "dataset:pack": "bash -c 'tar -czf \"$1.tar.gz\" --exclude=.DS_Store -C datasets \"$1\"' --",
-    "reports:deploy": "bash scripts/deploy-reports.sh"
+    "reports:deploy": "bash scripts/deploy-reports.sh",
+    "simulator:boot": "bash ios/scripts/boot-simulator.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
