@@ -13,6 +13,12 @@ The current version of BookSnap has been trained on and optimised for book pages
 
 BookSnap is currently bundled as a React Native (Expo) library, with the core logic implemented natively, separately for Android and iOS. All processing happens on-device, the code makes no use of the network or any backend services.
 
+## Installation (React Native)
+
+```sh
+npx expo install react-native-booksnap
+```
+
 ## Usage (React Native)
 
 ```ts

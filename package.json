@@ -19,7 +19,8 @@
     "format:ios": "bash ios/scripts/swiftlint.sh lint --fix && bash ios/scripts/swiftlint.sh lint --strict",
     "dataset:pack": "bash -c 'tar -czf \"$1.tar.gz\" --exclude=.DS_Store -C datasets \"$1\"' --",
     "reports:deploy": "bash scripts/deploy-reports.sh",
-    "simulator:boot": "bash ios/scripts/boot-simulator.sh"
+    "simulator:boot": "bash ios/scripts/boot-simulator.sh",
+    "publish:check": "bash scripts/prepack-checks.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -38,6 +39,20 @@
     "text-recognition",
     "document-scanning"
   ],
+  "files": [
+    "src/",
+    "!src/**/*.test.*",
+    "android/src/",
+    "android/build.gradle",
+    "ios/*.swift",
+    "ios/pipeline/",
+    "ios/BookSnap.podspec",
+    "expo-module.config.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nikhaldi/booksnap.git"
+  },
   "packageManager": "pnpm@9.15.4",
   "license": "MIT",
   "peerDependencies": {

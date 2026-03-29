@@ -3,6 +3,8 @@ on:
   push:
     branches: [main, lab-base, lab-android, lab-ios]
   pull_request:
+  release:
+    types: [published]
 
 jobs:
   test-ts:
@@ -71,3 +73,20 @@ jobs:
              [ "${{ needs.test-ios.result }}" != "success" ]; then
             exit 1
           fi
+
+  publish:
+    needs: [ci]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: pnpm run publish:check
+      - run: npm publish --provenance --access public
