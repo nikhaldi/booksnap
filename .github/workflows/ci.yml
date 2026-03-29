@@ -59,3 +59,15 @@ jobs:
           key: swiftlint-${{ hashFiles('ios/scripts/swiftlint.sh') }}
       - run: bash ios/scripts/swiftlint.sh lint --strict
       - run: bash ios/test-harness/scripts/run-tests.sh
+
+  ci:
+    runs-on: ubuntu-latest
+    needs: [test-ts, test-android, test-ios]
+    if: always()
+    steps:
+      - run: |
+          if [ "${{ needs.test-ts.result }}" != "success" ] || \
+             [ "${{ needs.test-android.result }}" != "success" ] || \
+             [ "${{ needs.test-ios.result }}" != "success" ]; then
+            exit 1
+          fi
