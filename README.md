@@ -75,6 +75,16 @@ Each platform has its own lab in [`android/lab/`](android/lab/) and [`ios/lab/`]
 - **A backend** — connects the lab to a platform-specific build and evaluation environment (Android emulator or iOS simulator via a daemon)
 - **results.tsv** - a record of kept and discarded experiments so far
 
+### Metrics & quality control
+
+Per-sample accuracy reports for each release are published at [nikhaldi.github.io/booksnap](https://nikhaldi.github.io/booksnap/).
+
+During development you can generate a report yourself when inside a lab:
+
+```sh
+uv run diff-report --data ../../datasets/booksnap-base --bounds
+```
+
 ### Operating a lab
 
 Prerequisites (yes, there are many):

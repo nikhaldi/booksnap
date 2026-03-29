@@ -127,6 +127,7 @@ def generate_report(
     output_path: Path,
     image_dir: Path | None = None,
     spell_check_disabled: bool = False,
+    version: str | None = None,
 ) -> None:
     if image_dir is None:
         image_dir = data_dir
@@ -156,37 +157,40 @@ def generate_report(
 
     samples.sort(key=lambda s: s["cer"], reverse=True)
 
+    version_suffix = f" — {escape(version)}" if version else ""
+    title = f"BookSnap OCR Diff Report{version_suffix}"
+
     html_parts = [
-        """<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>BookSnap OCR Diff Report</title>
+        f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>{title}</title>
 <style>
-body { font-family: -apple-system, sans-serif; margin: 20px; background: #f5f5f5; }
-h1 { color: #333; }
-.summary { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-.sample { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.sample-header { display: flex; justify-content: space-between; align-items: center;
-                 margin-bottom: 15px; }
-.sample-header h3 { margin: 0; }
-.cer-badge { padding: 4px 12px; border-radius: 12px; font-weight: bold; color: white; }
-.cer-good { background: #4caf50; }
-.cer-ok { background: #ff9800; }
-.cer-bad { background: #f44336; }
-.sample-body { display: flex; gap: 20px; }
-.sample-image { flex: 0 0 300px; }
-.sample-image img { max-width: 300px; max-height: 500px; border-radius: 4px; }
-.sample-diff { flex: 1; min-width: 0; }
-.diff-row { display: flex; gap: 15px; }
-.diff-col { flex: 1; min-width: 0; }
-.diff-col h4 { margin: 0 0 5px 0; color: #666; font-size: 12px; }
-.diff-col pre { white-space: pre-wrap; word-break: break-word; font-size: 13px;
-                line-height: 1.5; background: #fafafa; padding: 10px; border-radius: 4px; }
-.eq { color: #333; }
-.del { background: #ffcdd2; color: #b71c1c; text-decoration: line-through; }
-.ins { background: #fff3e0; color: #e65100; }
-.meta { color: #888; font-size: 13px; margin-bottom: 10px; }
+body {{ font-family: -apple-system, sans-serif; margin: 20px; background: #f5f5f5; }}
+h1 {{ color: #333; }}
+.summary {{ background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
+.sample {{ background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+.sample-header {{ display: flex; justify-content: space-between; align-items: center;
+                 margin-bottom: 15px; }}
+.sample-header h3 {{ margin: 0; }}
+.cer-badge {{ padding: 4px 12px; border-radius: 12px; font-weight: bold; color: white; }}
+.cer-good {{ background: #4caf50; }}
+.cer-ok {{ background: #ff9800; }}
+.cer-bad {{ background: #f44336; }}
+.sample-body {{ display: flex; gap: 20px; }}
+.sample-image {{ flex: 0 0 300px; }}
+.sample-image img {{ max-width: 300px; max-height: 500px; border-radius: 4px; }}
+.sample-diff {{ flex: 1; min-width: 0; }}
+.diff-row {{ display: flex; gap: 15px; }}
+.diff-col {{ flex: 1; min-width: 0; }}
+.diff-col h4 {{ margin: 0 0 5px 0; color: #666; font-size: 12px; }}
+.diff-col pre {{ white-space: pre-wrap; word-break: break-word; font-size: 13px;
+                line-height: 1.5; background: #fafafa; padding: 10px; border-radius: 4px; }}
+.eq {{ color: #333; }}
+.del {{ background: #ffcdd2; color: #b71c1c; text-decoration: line-through; }}
+.ins {{ background: #fff3e0; color: #e65100; }}
+.meta {{ color: #888; font-size: 13px; margin-bottom: 10px; }}
 </style></head><body>
-<h1>BookSnap OCR Diff Report</h1>
+<h1>{title}</h1>
 """,
     ]
 
@@ -221,7 +225,8 @@ h1 { color: #333; }
             else "cer-bad"
         )
         image_path = image_dir / s["path"]
-        img_src = str(image_path) if s["path"] and image_path.exists() else ""
+        # Use relative path so the report works when deployed (e.g. to gh-pages)
+        img_src = s["path"] if s["path"] and image_path.exists() else ""
 
         page_info = ""
         if s["page_expected"] is not None:
@@ -289,6 +294,11 @@ def main():
         action="store_true",
         help="Disable spell checking in the pipeline",
     )
+    parser.add_argument(
+        "--version",
+        default=None,
+        help="Version label shown in the report title (e.g. 'Android 0.1.0')",
+    )
     args = parser.parse_args()
 
     data_dir = Path(args.data).resolve()
@@ -311,6 +321,7 @@ def main():
         data_dir, diagnose_data, output_path,
         image_dir=image_dir,
         spell_check_disabled=args.no_spell_check,
+        version=args.version,
     )
     print(f"Report saved to {output_path}")
 
