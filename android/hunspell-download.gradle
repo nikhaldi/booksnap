@@ -1,0 +1,46 @@
+/**
+ * Shared Gradle script to download Hunspell dictionaries at build time.
+ *
+ * Usage: apply from: "<path>/hunspell-download.gradle"
+ *
+ * Expects:
+ *   - hunspellLangsList: List<String> of language codes (e.g. ["en", "fr"])
+ *   - hunspellOutDir: File pointing to the output assets directory
+ *
+ * Both must be set before applying this script.
+ */
+
+def baseUrl = "https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries"
+
+task downloadHunspellDictionaries {
+  inputs.property("langs", hunspellLangsList.join(","))
+  outputs.dir hunspellOutDir
+
+  doLast {
+    hunspellOutDir.mkdirs()
+
+    // Remove dictionaries for languages no longer in the configured list
+    def expectedFiles = hunspellLangsList.collectMany { lang -> ["${lang}.dic", "${lang}.aff"] } as Set
+    hunspellOutDir.listFiles()?.each { file ->
+      if (file.name.endsWith(".dic") || file.name.endsWith(".aff")) {
+        if (!expectedFiles.contains(file.name)) {
+          println "Removing stale dictionary ${file.name}"
+          file.delete()
+        }
+      }
+    }
+
+    // Download missing dictionaries
+    hunspellLangsList.each { lang ->
+      ["dic", "aff"].each { ext ->
+        def target = new File(hunspellOutDir, "${lang}.${ext}")
+        if (!target.exists()) {
+          println "Downloading ${lang}.${ext}..."
+          new URL("${baseUrl}/${lang}/index.${ext}").withInputStream { is ->
+            target.bytes = is.bytes
+          }
+        }
+      }
+    }
+  }
+}

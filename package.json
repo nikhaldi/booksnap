@@ -6,7 +6,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "setup": "pnpm install && bash android/test-harness/scripts/download-dictionaries.sh",
+    "setup": "pnpm install",
     "test": "vitest run",
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
     "test:ios": "bash ios/test-harness/scripts/run-tests.sh",
@@ -47,7 +47,8 @@
     "ios/*.swift",
     "ios/pipeline/",
     "ios/BookSnap.podspec",
-    "expo-module.config.json"
+    "expo-module.config.json",
+    "plugin/"
   ],
   "repository": {
     "type": "git",

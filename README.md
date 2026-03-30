@@ -68,6 +68,20 @@ Supported options:
 | ------------ | --------- | ------- | ------------------------------ |
 | `spellCheck` | `boolean` | `true`  | Enable/disable spell correction. You may want to disable this to conserve processing time and memory (as dictionaries may need to be loaded into memory). |
 
+### Spell check configuration (Android only)
+
+BookSnap downloads Hunspell dictionaries at Android build time for spell correction. By default, only English is included. To add more languages, configure the Expo plugin in your `app.json`:
+
+```json
+{
+  "plugins": [
+    ["react-native-booksnap", { "languages": ["en", "fr", "de", "it"] }]
+  ]
+}
+```
+
+BookSnap has been tested with `en`, `en-GB`, `fr`, `de`, `it` but any language code from the [wooorm/dictionaries](https://github.com/wooorm/dictionaries) repository can be used.
+
 ## Development
 
 ### Autoresearch Lab
