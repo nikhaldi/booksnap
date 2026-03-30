@@ -319,10 +319,11 @@ public class BookSnapPipeline {
 
     // Sort by Y center (descending = top-to-bottom in Vision coords)
     // Then group consecutive observations that are within yTolerance
-    let sorted = observations.enumerated().sorted {
-      let y0 = $0.element.boundingBox.origin.y + $0.element.boundingBox.size.height / 2.0
-      let y1 = $1.element.boundingBox.origin.y + $1.element.boundingBox.size.height / 2.0
-      return y0 > y1  // descending Y = top to bottom
+    let indexed = observations.enumerated().map { ($0.offset, $0.element) }
+    let sorted = indexed.sorted {
+      let centerY0 = $0.1.boundingBox.origin.y + $0.1.boundingBox.size.height / 2.0
+      let centerY1 = $1.1.boundingBox.origin.y + $1.1.boundingBox.size.height / 2.0
+      return centerY0 > centerY1  // descending Y = top to bottom
     }
 
     // Group into Y-bands
@@ -547,18 +548,18 @@ public class BookSnapPipeline {
       var validCandidates: [String] = []
       let chars = Array(misspelled)
 
-      for i in 0..<chars.count {
-        for (from, to) in confusablePairs {
-          let ch = chars[i]
+      for idx in 0..<chars.count {
+        for (from, replacement) in confusablePairs {
+          let char = chars[idx]
           // Match case-insensitively
-          let chLower = Character(ch.lowercased())
-          if chLower == from {
+          let charLower = Character(char.lowercased())
+          if charLower == from {
             var newChars = chars
             // Preserve case
-            if ch.isUppercase {
-              newChars[i] = Character(String(to).uppercased())
+            if char.isUppercase {
+              newChars[idx] = Character(String(replacement).uppercased())
             } else {
-              newChars[i] = to
+              newChars[idx] = replacement
             }
             let candidate = String(newChars)
             if candidate == misspelled { continue }
