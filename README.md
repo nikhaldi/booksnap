@@ -82,6 +82,8 @@ BookSnap downloads Hunspell dictionaries at Android build time for spell correct
 
 BookSnap has been tested with `en`, `en-GB`, `fr`, `de`, `it` but any language code from the [wooorm/dictionaries](https://github.com/wooorm/dictionaries) repository can be used.
 
+**Note on dictionary licenses:** Each dictionary has its own license (e.g. MIT/BSD for English, MPL-2.0 for French, GPL for German and Italian). These dictionaries are downloaded at build time and bundled into your (Android) app. Check the license for each dictionary you include to ensure compliance with your distribution requirements. See the [individual dictionary directories](https://github.com/wooorm/dictionaries/tree/main/dictionaries) for details.
+
 ## Development
 
 ### Autoresearch Lab
