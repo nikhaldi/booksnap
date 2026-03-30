@@ -114,7 +114,10 @@ public class BookSnapPipeline {
     }
 
     // Fix OCR character confusion errors using UITextChecker as dictionary validator
-    text = Self.fixOCRConfusions(text)
+    let spellCheck = options["spellCheck"] as? Bool ?? true
+    if spellCheck {
+      text = Self.fixOCRConfusions(text)
+    }
 
     return PageResult(
       text: text,
