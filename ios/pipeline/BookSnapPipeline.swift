@@ -1,6 +1,7 @@
 import UIKit
 import Vision
 import CoreImage
+import NaturalLanguage
 
 /// Base pipeline: loads the image and runs Apple Vision with default settings.
 ///
@@ -108,6 +109,9 @@ public class BookSnapPipeline {
         }
       }
     }
+
+    // Fix OCR character confusion errors using UITextChecker as dictionary validator
+    text = Self.fixOCRConfusions(text)
 
     return PageResult(
       text: text,
@@ -423,6 +427,113 @@ public class BookSnapPipeline {
     guard let output = filter.outputImage else { return nil }
     let context = CIContext()
     return context.createCGImage(output, from: output.extent)
+  }
+
+  /// Fix common OCR character confusions by trying known swap patterns and
+  /// validating corrections against UITextChecker's dictionary.
+  /// Only corrects words where exactly one swap produces a valid dictionary word.
+  private static func fixOCRConfusions(_ text: String) -> String {
+    let recognizer = NLLanguageRecognizer()
+    recognizer.processString(text)
+    guard let detectedLang = recognizer.dominantLanguage else { return text }
+
+    let langCode: String
+    switch detectedLang {
+    case .italian: langCode = "it"
+    case .german: langCode = "de"
+    case .french: langCode = "fr"
+    case .english: langCode = "en"
+    case .spanish: langCode = "es"
+    case .portuguese: langCode = "pt"
+    default: return text
+    }
+
+    let available = UITextChecker.availableLanguages
+    guard let checkerLang = available.first(where: { $0.hasPrefix(langCode) }) else { return text }
+
+    let checker = UITextChecker()
+    let nsText = text as NSString
+    let fullRange = NSRange(location: 0, length: nsText.length)
+
+    // OCR-confusable character pairs (single character swaps)
+    let confusablePairs: [(Character, Character)] = [
+      ("f", "t"), ("t", "f"),
+      ("l", "i"), ("i", "l"),
+    ]
+
+    var corrections: [(NSRange, String)] = []
+    var searchStart = 0
+
+    while searchStart < nsText.length {
+      let misspelledRange = checker.rangeOfMisspelledWord(
+        in: text,
+        range: fullRange,
+        startingAt: searchStart,
+        wrap: false,
+        language: checkerLang
+      )
+
+      guard misspelledRange.location != NSNotFound else { break }
+
+      let misspelled = nsText.substring(with: misspelledRange)
+      searchStart = misspelledRange.location + misspelledRange.length
+
+      // Skip short words and words with non-letter characters
+      guard misspelled.count >= 4 else { continue }
+      guard misspelled.allSatisfy({ $0.isLetter }) else { continue }
+
+      // Try each confusable swap at each character position
+      var validCandidates: [String] = []
+      let chars = Array(misspelled)
+
+      for i in 0..<chars.count {
+        for (from, to) in confusablePairs {
+          let ch = chars[i]
+          // Match case-insensitively
+          let chLower = Character(ch.lowercased())
+          if chLower == from {
+            var newChars = chars
+            // Preserve case
+            if ch.isUppercase {
+              newChars[i] = Character(String(to).uppercased())
+            } else {
+              newChars[i] = to
+            }
+            let candidate = String(newChars)
+            if candidate == misspelled { continue }
+
+            // Check if this candidate is a valid word
+            let candidateNS = candidate as NSString
+            let candidateRange = NSRange(location: 0, length: candidateNS.length)
+            let check = checker.rangeOfMisspelledWord(
+              in: candidate,
+              range: candidateRange,
+              startingAt: 0,
+              wrap: false,
+              language: checkerLang
+            )
+            if check.location == NSNotFound {
+              // It's a valid word!
+              validCandidates.append(candidate)
+            }
+          }
+        }
+      }
+
+      // Only apply if exactly one valid candidate was found (unambiguous)
+      if validCandidates.count == 1 {
+        corrections.append((misspelledRange, validCandidates[0]))
+      }
+    }
+
+    guard !corrections.isEmpty else { return text }
+
+    var result = text as NSString
+    for (range, correction) in corrections.reversed() {
+      result = result.replacingCharacters(in: range, with: correction) as NSString
+    }
+
+    return result as String
   }
 
   private static func loadImage(from path: String) throws -> UIImage {
