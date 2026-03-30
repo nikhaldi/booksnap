@@ -45,7 +45,10 @@ public class BookSnapPipeline {
     let filtered = Self.filterFacingPage(observations)
 
     // Filter out running headers/footers from body text
-    let bodyObs = Self.filterRunningHeaders(filtered)
+    let bodyObsUnsorted = Self.filterRunningHeaders(filtered)
+
+    // Sort observations into reading order: group by Y-band, sort bands top-to-bottom
+    let bodyObs = Self.sortReadingOrder(bodyObsUnsorted)
 
     let lines = bodyObs
       .compactMap { $0.topCandidates(1).first?.string }
@@ -296,6 +299,61 @@ public class BookSnapPipeline {
     }
 
     return filtered.isEmpty ? observations : filtered
+  }
+
+  /// Sort observations into reading order by grouping into Y-bands (lines)
+  /// and sorting bands top-to-bottom. Within each band, preserves original order.
+  /// Uses the median line height as the Y-tolerance for grouping.
+  private static func sortReadingOrder(
+    _ observations: [VNRecognizedTextObservation]
+  ) -> [VNRecognizedTextObservation] {
+    guard observations.count > 2 else { return observations }
+
+    // Compute median observation height as the Y-tolerance
+    let heights = observations.map { $0.boundingBox.size.height }.sorted()
+    let medianHeight = heights[heights.count / 2]
+    let yTolerance = medianHeight * 0.5  // half a line height
+
+    // Sort by Y center (descending = top-to-bottom in Vision coords)
+    // Then group consecutive observations that are within yTolerance
+    let sorted = observations.enumerated().sorted {
+      let y0 = $0.element.boundingBox.origin.y + $0.element.boundingBox.size.height / 2.0
+      let y1 = $1.element.boundingBox.origin.y + $1.element.boundingBox.size.height / 2.0
+      return y0 > y1  // descending Y = top to bottom
+    }
+
+    // Group into Y-bands
+    var bands: [[Int]] = []  // each band is a list of original indices
+    var currentBand: [Int] = []
+    var bandY: CGFloat = 0
+
+    for (origIdx, obs) in sorted {
+      let midY = obs.boundingBox.origin.y + obs.boundingBox.size.height / 2.0
+      if currentBand.isEmpty {
+        currentBand = [origIdx]
+        bandY = midY
+      } else if abs(midY - bandY) <= yTolerance {
+        currentBand.append(origIdx)
+      } else {
+        bands.append(currentBand)
+        currentBand = [origIdx]
+        bandY = midY
+      }
+    }
+    if !currentBand.isEmpty {
+      bands.append(currentBand)
+    }
+
+    // Within each band, sort by original index to preserve Vision's within-line order
+    var result: [VNRecognizedTextObservation] = []
+    for band in bands {
+      let sortedBand = band.sorted()  // original order within the band
+      for idx in sortedBand {
+        result.append(observations[idx])
+      }
+    }
+
+    return result
   }
 
   private static func computeUnionBounds(
