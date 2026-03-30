@@ -312,7 +312,7 @@ public class BookSnapPipeline {
     // Compute median observation height as the Y-tolerance
     let heights = observations.map { $0.boundingBox.size.height }.sorted()
     let medianHeight = heights[heights.count / 2]
-    let yTolerance = medianHeight * 0.5  // half a line height
+    let yTolerance = medianHeight * 0.75  // three-quarters of a line height
 
     // Sort by Y center (descending = top-to-bottom in Vision coords)
     // Then group consecutive observations that are within yTolerance
