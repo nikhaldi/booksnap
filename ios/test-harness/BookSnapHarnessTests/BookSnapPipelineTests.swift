@@ -84,6 +84,29 @@ final class BookSnapPipelineTests: XCTestCase {
         )
     }
 
+    func testSpellCheckCanBeDisabled() async throws {
+        let imagePath = try Self.createTextImage(
+            text: "Hello World",
+            size: CGSize(width: 400, height: 200)
+        )
+        defer { try? FileManager.default.removeItem(atPath: imagePath) }
+
+        let withSpellCheck = try await pipeline.processImage(
+            from: imagePath, options: ["spellCheck": true]
+        )
+        let withoutSpellCheck = try await pipeline.processImage(
+            from: imagePath, options: ["spellCheck": false]
+        )
+
+        // Both should extract text successfully
+        XCTAssertFalse(withSpellCheck.text.isEmpty)
+        XCTAssertFalse(withoutSpellCheck.text.isEmpty)
+
+        // Both should contain the same core text (spell check doesn't alter correct words)
+        XCTAssertTrue(withSpellCheck.text.lowercased().contains("hello"))
+        XCTAssertTrue(withoutSpellCheck.text.lowercased().contains("hello"))
+    }
+
     func testProcessImageWithPageNumber() async throws {
         // Create a tall image with body text in the center and a page number at the bottom,
         // simulating a real book page layout.
