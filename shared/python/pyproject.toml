@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "booksnap-labs"
-version = "0.1.0"
+version = "0.0.0dev"
 description = "Shared utilities for booksnap research labs"
 requires-python = ">=3.12"
 dependencies = [

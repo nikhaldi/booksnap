@@ -115,18 +115,13 @@ tasks.matching { it.name.contains("compile", ignoreCase = true) && it.name.conta
     dependsOn(syncPipeline)
 }
 
-// Copy only the Hunspell dictionaries matching HUNSPELL_LANGS into assets.
-// Source dictionaries live in src/main/assets/hunspell-all/; the build copies
-// only the needed .dic/.aff files into src/main/assets/hunspell/ before compile.
-val copyHunspell = tasks.register<Sync>("copyHunspellDictionaries") {
-    from("src/main/assets/hunspell-all") {
-        include(hunspellLangs.flatMap { lang -> listOf("$lang.dic", "$lang.aff") })
-    }
-    into("src/main/assets/hunspell")
-}
+// Download Hunspell dictionaries for the configured languages at build time.
+extra["hunspellLangsList"] = hunspellLangs
+extra["hunspellOutDir"] = file("src/main/assets/hunspell")
+apply(from = "../../../android/hunspell-download.gradle")
 
 tasks.matching { it.name.startsWith("merge") && it.name.contains("Assets") }.configureEach {
-    dependsOn(copyHunspell)
+    dependsOn("downloadHunspellDictionaries")
 }
 
 // Apply pipeline-declared dependencies if present
