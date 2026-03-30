@@ -36,10 +36,6 @@ jobs:
           cache: pnpm
       - uses: actions/cache@v4
         with:
-          path: android/test-harness/app/src/main/assets/hunspell-all
-          key: hunspell-${{ hashFiles('android/test-harness/scripts/download-dictionaries.sh') }}
-      - uses: actions/cache@v4
-        with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
@@ -47,6 +43,12 @@ jobs:
         with:
           path: android/scripts/.ktlint-*
           key: ktlint-${{ hashFiles('android/scripts/ktlint.sh') }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            android/src/main/assets/hunspell
+            android/test-harness/app/src/main/assets/hunspell
+          key: hunspell-${{ hashFiles('android/hunspell-download.gradle') }}
       - run: pnpm run setup
       - run: pnpm run lint:android
       - run: pnpm run test:android

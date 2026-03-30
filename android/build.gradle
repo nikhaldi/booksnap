@@ -35,7 +35,7 @@ buildscript {
   }
 }
 
-def hunspellLangsStr = findProperty("hunspell.langs") ?: "en,en-GB,fr,de,it"
+def hunspellLangsStr = findProperty("hunspell.langs") ?: "en"
 def hunspellLangsList = hunspellLangsStr.split(",").collect { it.trim() }
 
 android {
@@ -75,23 +75,15 @@ android {
   }
 }
 
-// Copy only the Hunspell dictionaries matching HUNSPELL_LANGS into assets.
-// Source dictionaries are shared with the test harness.
-def hunspellAllDir = file("test-harness/app/src/main/assets/hunspell-all")
-def hunspellOutDir = file("src/main/assets/hunspell")
+// Download Hunspell dictionaries for the configured languages at build time.
+ext.hunspellOutDir = file("src/main/assets/hunspell")
+apply from: "hunspell-download.gradle"
 
-task copyHunspellDictionaries(type: Sync) {
-  from(hunspellAllDir) {
-    include hunspellLangsList.collectMany { lang -> ["${lang}.dic", "${lang}.aff"] }
-  }
-  into hunspellOutDir
-}
-
-// Ensure dictionaries are copied before any task that reads assets or runs lint
+// Ensure dictionaries are downloaded before any task that reads assets or runs lint
 tasks.configureEach { task ->
-  if (task != copyHunspellDictionaries &&
+  if (task != downloadHunspellDictionaries &&
       (task.name.contains("Assets") || task.name.contains("Lint") || task.name.contains("lint"))) {
-    task.dependsOn copyHunspellDictionaries
+    task.dependsOn downloadHunspellDictionaries
   }
 }
 
