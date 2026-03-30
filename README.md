@@ -13,6 +13,12 @@ The current version of BookSnap has been trained on and optimised for book pages
 
 BookSnap is currently bundled as a React Native (Expo) library, with the core logic implemented natively, separately for Android and iOS. All processing happens on-device, the code makes no use of the network or any backend services.
 
+## Installation (React Native)
+
+```sh
+npx expo install react-native-booksnap
+```
+
 ## Usage (React Native)
 
 ```ts
@@ -62,6 +68,20 @@ Supported options:
 | ------------ | --------- | ------- | ------------------------------ |
 | `spellCheck` | `boolean` | `true`  | Enable/disable spell correction. You may want to disable this to conserve processing time and memory (as dictionaries may need to be loaded into memory). |
 
+### Spell check configuration (Android only)
+
+BookSnap downloads Hunspell dictionaries at Android build time for spell correction. By default, only English is included. To add more languages, configure the Expo plugin in your `app.json`:
+
+```json
+{
+  "plugins": [
+    ["react-native-booksnap", { "languages": ["en", "fr", "de", "it"] }]
+  ]
+}
+```
+
+BookSnap has been tested with `en`, `en-GB`, `fr`, `de`, `it` but any language code from the [wooorm/dictionaries](https://github.com/wooorm/dictionaries) repository can be used.
+
 ## Development
 
 ### Autoresearch Lab
@@ -75,6 +95,16 @@ Each platform has its own lab in [`android/lab/`](android/lab/) and [`ios/lab/`]
 - **A backend** — connects the lab to a platform-specific build and evaluation environment (Android emulator or iOS simulator via a daemon)
 - **results.tsv** - a record of kept and discarded experiments so far
 
+### Metrics & quality control
+
+Per-sample accuracy reports for each release are published at [nikhaldi.github.io/booksnap](https://nikhaldi.github.io/booksnap/).
+
+During development you can generate a report yourself when inside a lab:
+
+```sh
+uv run diff-report --data ../../datasets/booksnap-base --bounds
+```
+
 ### Operating a lab
 
 Prerequisites (yes, there are many):
@@ -84,15 +114,52 @@ Prerequisites (yes, there are many):
 - Install [Docker](https://docs.docker.com/desktop/) (sandboxing the research loop)
 - Install an Android SDK (compileSdk 34) and JDK 17 (for Android development)
 - Install Xcode (for iOS development - only possible on OS X)
+- An Anthropic API key set as environment variable `ANTHROPIC_API_KEY` (or on OS X you can pass `--use-oauth-osx` to `arl run` to use credentials from a recent Claude Code session - this is much cheaper than an API key if you are on a Claude Pro or Max plan)
 
 ```sh
 # One-time setup of the development environment
 pnpm run setup
 
-cd android/lab/  # or `cd ios/lab/`
+# Get the dataset currently used for training in the labs
+curl -fsSL https://github.com/nikhaldi/booksnap/releases/download/dataset-booksnap-base-0.1.0/booksnap-base.tar.gz | tar -xz -C datasets
 
-# TODO further instructions here
+# Switch onto a lab branch and create your own local branch from it
+git checkout lab-android
+git checkout -b mylab-android
+
+cd android/lab/
+# or: cd ios/lab/
+
+# Run evaluation against the training dataset
+uv run arl eval --data ../../datasets/booksnap-base
+
+# Generate a report in ./viz/report.html for visual inspection
+# and debugging of individual samples
+uv run diff-report --data ../../datasets/booksnap-base --bounds
+
+# Kick off a research loop 
+uv run arl run --data ../../datasets/booksnap-base
+
+# Continue the research loop with a prompt to focus its attention
+uv run arl run --data ../../datasets/booksnap-base --prompt "Prioritise improving paragraph hyphentation"
 ```
+
+Autoresearch Lab's `arl run` has a lot of flags that you may care about, e.g., to select an AI model or set stopping conditions for the research loop. Run `uv run arl run --help` to see them.
+
+### Lab branches
+
+Aside from `main` this repo has 3 significant branches:
+
+- `lab-base`: Starting point for new lab runs. Contains the pipeline scaffolding, test harness, and evaluation infrastructure, but with minimal pipeline logic. Create a branch off of this if you want to run a new research loop from scratch (e.g., with a new dataset or new agent instructions or just because a new AI model came out that may do better (!)). Maintainers will do their best to keep this branch in sync with `main`.
+- `lab-android`: The Android pipeline as developed by the research agent. Each commit is a kept experiment with its score improvements noted in the commit message. There may be human-authored commits interleaved where human intervention was necessary during development.
+- `lab-ios`: Same as above for the iOS pipeline.
+
+Guidelines for working with branches:
+
+- **Only run the research loop on a branch you created yourself off a lab branch** (never on `main` or one of the 3 lab branches above) as the loop will create a commit for each successful experiment.
+- To publish changes developed on your lab branch, create a PR that merges changes into the appropriate lab branch (`lab-android` or `lab-ios`). Then create a PR that squashes & merges changes from the lab branch onto `main`. The commit history on lab branches is preserved as a record of what actually happened during research.
+
+If you're running a research loop off of `lab-base` to generate something for your own use case, you should probably just fork this repo and live with the fork, rather than trying to get your changes merged back. Forking is perfectly fine!
 
 ### Tests
 
@@ -109,21 +176,9 @@ pnpm run test:ios
 
 ### Datasets
 
-TODO describe datasets
+Datasets are collections of book page photos with ground truth text, used to evaluate the text recognition pipeline.
 
-### Lab branches
-
-Aside from `main` this repo has 3 significant branches:
-
-- `lab-base`: Starting point for new lab runs. Contains the pipeline scaffolding, test harness, and evaluation infrastructure, but with minimal pipeline logic. Create a branch off of this if you want to run a new research loop from scratch (e.g., with a new dataset or new agent instructions or just because a new AI model came out that may do better (!)).
-- `lab-android`: The Android pipeline as developed by the research agent. Each commit is a kept experiment with its score improvements noted in the commit message. There may be human-authored commits interleaved where human intervention was necessary during development.
-- `lab-ios`: Same as above for the iOS pipeline.
-
-Guidelines for working with branches:
-
-- **Only run the research loop on a lab branch** (never on `main`) as the loop will create a commit for each successful experiment.
-- Before running a research loop on a lab branch it is a good idea to pull from `main` and merge `main` into the lab branch to ensure it is up-to-date. (The `lab-base` branch will be kept in sync by maintainers as much as possible.)
-- To publish changes developed on a lab branch, create a PR that squashes & merges all changes from the lab branch onto `main`. The commit history on lab branches should be preserved as a record of what actually happened in research.
+Each dataset must contain images and a `ground_truth.json` manifest conforming to [`datasets/schema.json`](datasets/schema.json).
 
 ## License
 
