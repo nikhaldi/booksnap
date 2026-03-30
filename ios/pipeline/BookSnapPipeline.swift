@@ -166,11 +166,12 @@ public class BookSnapPipeline {
   /// Detects patterns like "Title 109 body text..." or "109• Title body text..."
   /// where a short header with a page number precedes the actual body text.
   private static func stripRunningHeader(_ text: String) -> String {
-    let words = text.split(separator: " ", maxSplits: 10).map(String.init)
+    let words = text.split(separator: " ", maxSplits: 14).map(String.init)
     guard words.count > 5 else { return text }
 
-    // Look for a page number in the first 5 words
-    for idx in 0..<min(5, words.count) {
+    // Look for a page number in the first 8 words (expanded to handle longer headers
+    // like "Debacle: Lorraine, Ardennes, Charleroi, Mons » 267")
+    for idx in 0..<min(8, words.count) {
       if parsePageNum(words[idx]) != nil {
         // Found a number at position i. Check if text after it looks like body text.
         // A running header typically has: [title words] [number] [body text starts]
@@ -186,7 +187,7 @@ public class BookSnapPipeline {
           // Number is first: "109 Title Text body..." or "109• Title body..."
           // Find where title-case words end
           var scan = 1
-          while scan < min(6, words.count) {
+          while scan < min(8, words.count) {
             let word = words[scan]
             let letter = word.first(where: { $0.isLetter })
             if let letter, letter.isLowercase {
@@ -200,7 +201,7 @@ public class BookSnapPipeline {
           bodyStartIdx = afterIdx
         }
 
-        guard bodyStartIdx < words.count && bodyStartIdx <= 6 else { continue }
+        guard bodyStartIdx < words.count && bodyStartIdx <= 9 else { continue }
 
         // Verify: the word at bodyStartIdx should start lowercase (mid-sentence)
         let bodyWord = words[bodyStartIdx]
