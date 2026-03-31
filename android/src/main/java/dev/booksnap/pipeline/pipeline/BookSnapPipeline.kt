@@ -197,9 +197,15 @@ class BookSnapPipeline(
                 rawText
             }
 
-        // Compute text bounds as union of all cleaned line bounding boxes
+        // Compute text bounds as union of all cleaned line bounding boxes.
+        // Skip undeskew for zero bounds (no text recognized) to avoid producing garbage coordinates.
         val rawTextBounds = computeUnionBounds(cleanedLines.map { it.boundingBox })
-        val textBounds = undeskewBounds(rawTextBounds, deskewAngle, bitmap.width, bitmap.height)
+        val textBounds =
+            if (rawTextBounds.width > 0 && rawTextBounds.height > 0) {
+                undeskewBounds(rawTextBounds, deskewAngle, bitmap.width, bitmap.height)
+            } else {
+                rawTextBounds
+            }
 
         // Compute page number bounds from the matched line
         val pageNumberBounds =
