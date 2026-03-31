@@ -2,24 +2,33 @@
 
 To publish a new version of the library:
 
-1. **Bump the version** — this updates `package.json` and creates a git tag:
+1. **Create a release branch and bump the version:**
    ```sh
-   npm version patch  # or minor, or major
+   git checkout -b release/0.3.0
+   npm version patch --no-git-tag-version  # or minor, or major
+   git add package.json
+   git commit -m "Bump version to 0.3.0"
    ```
 
-2. **Run pre-publish checks** manually to verify all is ready:
+2. **Run pre-publish checks:**
    ```sh
    pnpm run publish:check
    ```
 
-3. **Push the tag:**
+3. **Push and create a PR to main:**
    ```sh
-   git push && git push --tags
+   git push -u origin release/0.3.0
    ```
 
-3. **Create a GitHub release** from the tag. This triggers CI, which publishes to npm via [trusted publishing](https://docs.npmjs.com/generating-provenance-statements#publishing-packages-with-provenance-via-github-actions).
+4. **After the PR is merged**, tag the merge commit and create a GitHub release:
+   ```sh
+   git checkout main && git pull
+   git tag v0.3.0
+   git push --tags
+   ```
+   Creating the release triggers CI, which publishes to npm via [trusted publishing](https://docs.npmjs.com/generating-provenance-statements#publishing-packages-with-provenance-via-github-actions).
 
-4. **Deploy diff reports** for the new version:
+5. **Deploy diff reports** for the new version:
    ```sh
    pnpm run reports:deploy
    ```
