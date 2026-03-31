@@ -10,8 +10,9 @@ To publish a new version of the library:
    git commit -m "Bump version to 0.3.0"
    ```
 
-2. **Run pre-publish checks:**
+2. **Run integration tests and pre-publish checks:**
    ```sh
+   pnpm run test:integration
    pnpm run publish:check
    ```
 
