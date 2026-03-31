@@ -49,7 +49,8 @@
     "ios/pipeline/",
     "ios/BookSnap.podspec",
     "expo-module.config.json",
-    "plugin/"
+    "plugin/",
+    "app.plugin.cjs"
   ],
   "repository": {
     "type": "git",
