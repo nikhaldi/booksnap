@@ -23,7 +23,7 @@ if ! git diff --quiet package.json; then
 fi
 
 # 2. No test files in package
-TEST_FILES=$(npm pack --dry-run 2>&1 | grep -E '\.(test|spec)\.' || true)
+TEST_FILES=$(npm pack --dry-run 2>&1 | grep 'npm notice' | grep -E '\.(test|spec)\.' || true)
 if [ -n "$TEST_FILES" ]; then
   echo "ERROR: Test files found in package:"
   echo "$TEST_FILES"
@@ -31,7 +31,7 @@ if [ -n "$TEST_FILES" ]; then
 fi
 
 # 3. No dev/config files leaking
-LEAKED=$(npm pack --dry-run 2>&1 | grep -iE '(\.env|\.eslint|vitest\.config|jest\.config|\.swiftlint|\.gitignore|tsconfig)' || true)
+LEAKED=$(npm pack --dry-run 2>&1 | grep 'npm notice' | grep -iE '(\.env|\.eslint|vitest\.config|jest\.config|\.swiftlint|\.gitignore|tsconfig)' || true)
 if [ -n "$LEAKED" ]; then
   echo "ERROR: Dev/config files found in package:"
   echo "$LEAKED"
