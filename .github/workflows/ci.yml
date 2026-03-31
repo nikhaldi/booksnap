@@ -78,7 +78,7 @@ jobs:
 
   publish:
     needs: [ci]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -123,7 +123,7 @@ Prerequisites (yes, there are many):
 pnpm run setup
 
 # Get the dataset currently used for training in the labs
-curl -fsSL https://github.com/nikhaldi/booksnap/releases/download/dataset-booksnap-base-0.1.0/booksnap-base.tar.gz | tar -xz -C datasets
+pnpm run dataset:download booksnap-base 0.1.0
 
 # Switch onto a lab branch and create your own local branch from it
 git checkout lab-android
@@ -181,6 +181,10 @@ pnpm run test:ios
 Datasets are collections of book page photos with ground truth text, used to evaluate the text recognition pipeline.
 
 Each dataset must contain images and a `ground_truth.json` manifest conforming to [`datasets/schema.json`](datasets/schema.json).
+
+## Releasing
+
+See [RELEASING.md](RELEASING.md).
 
 ## License
 
