@@ -46,7 +46,16 @@ if [ "$SIZE_UNIT" = "MB" ] || ([ "$SIZE_UNIT" = "kB" ] && [ "$(echo "$SIZE_KB > 
   ERRORS=$((ERRORS + 1))
 fi
 
-# 5. Version in package.json matches git tag (if running in CI on a release)
+# 5. Expo config plugin loads without errors
+PLUGIN_PATH=$(node -e "const c=require('./expo-module.config.json'); console.log(c.configPlugin || '')" 2>/dev/null)
+if [ -n "$PLUGIN_PATH" ]; then
+  if ! node --input-type=module -e "import('$PLUGIN_PATH')" 2>/dev/null; then
+    echo "ERROR: Expo config plugin at $PLUGIN_PATH failed to load."
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# 6. Version in package.json matches git tag (if running in CI on a release)
 if [ -n "$GITHUB_REF" ] && echo "$GITHUB_REF" | grep -q '^refs/tags/'; then
   GIT_TAG=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
   PKG_VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
