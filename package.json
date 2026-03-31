@@ -45,6 +45,7 @@
     "!src/**/*.test.*",
     "android/src/",
     "android/build.gradle",
+    "android/hunspell-download.gradle",
     "ios/*.swift",
     "ios/pipeline/",
     "ios/BookSnap.podspec",

@@ -55,7 +55,16 @@ if [ -n "$PLUGIN_PATH" ]; then
   fi
 fi
 
-# 6. Version in package.json matches git tag (if running in CI on a release)
+# 6. Files referenced by build.gradle are included in the package
+PACK_FILES=$(npm pack --dry-run 2>&1)
+for ref in $(grep -oE "apply from:.*\"([^\"]+)\"" android/build.gradle | grep -oE '"[^"]+"' | tr -d '"'); do
+  if ! echo "$PACK_FILES" | grep -q "android/$ref"; then
+    echo "ERROR: android/build.gradle references '$ref' but it's not in the published package."
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+# 7. Version in package.json matches git tag (if running in CI on a release)
 if [ -n "$GITHUB_REF" ] && echo "$GITHUB_REF" | grep -q '^refs/tags/'; then
   GIT_TAG=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
   PKG_VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
