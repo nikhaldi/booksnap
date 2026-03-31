@@ -1,6 +1,7 @@
 import UIKit
 import Vision
 import CoreImage
+import NaturalLanguage
 
 /// Base pipeline: loads the image and runs Apple Vision with default settings.
 ///
@@ -44,7 +45,10 @@ public class BookSnapPipeline {
     let filtered = Self.filterFacingPage(observations)
 
     // Filter out running headers/footers from body text
-    let bodyObs = Self.filterRunningHeaders(filtered)
+    let bodyObsUnsorted = Self.filterRunningHeaders(filtered)
+
+    // Sort observations into reading order: group by Y-band, sort bands top-to-bottom
+    let bodyObs = Self.sortReadingOrder(bodyObsUnsorted)
 
     let lines = bodyObs
       .compactMap { $0.topCandidates(1).first?.string }
@@ -109,6 +113,12 @@ public class BookSnapPipeline {
       }
     }
 
+    // Fix OCR character confusion errors using UITextChecker as dictionary validator
+    let spellCheck = options["spellCheck"] as? Bool ?? true
+    if spellCheck {
+      text = Self.fixOCRConfusions(text)
+    }
+
     return PageResult(
       text: text,
       textBounds: textBounds,
@@ -166,11 +176,12 @@ public class BookSnapPipeline {
   /// Detects patterns like "Title 109 body text..." or "109• Title body text..."
   /// where a short header with a page number precedes the actual body text.
   private static func stripRunningHeader(_ text: String) -> String {
-    let words = text.split(separator: " ", maxSplits: 10).map(String.init)
+    let words = text.split(separator: " ", maxSplits: 14).map(String.init)
     guard words.count > 5 else { return text }
 
-    // Look for a page number in the first 5 words
-    for idx in 0..<min(5, words.count) {
+    // Look for a page number in the first 8 words (expanded to handle longer headers
+    // like "Debacle: Lorraine, Ardennes, Charleroi, Mons » 267")
+    for idx in 0..<min(8, words.count) {
       if parsePageNum(words[idx]) != nil {
         // Found a number at position i. Check if text after it looks like body text.
         // A running header typically has: [title words] [number] [body text starts]
@@ -186,7 +197,7 @@ public class BookSnapPipeline {
           // Number is first: "109 Title Text body..." or "109• Title body..."
           // Find where title-case words end
           var scan = 1
-          while scan < min(6, words.count) {
+          while scan < min(8, words.count) {
             let word = words[scan]
             let letter = word.first(where: { $0.isLetter })
             if let letter, letter.isLowercase {
@@ -200,7 +211,7 @@ public class BookSnapPipeline {
           bodyStartIdx = afterIdx
         }
 
-        guard bodyStartIdx < words.count && bodyStartIdx <= 6 else { continue }
+        guard bodyStartIdx < words.count && bodyStartIdx <= 9 else { continue }
 
         // Verify: the word at bodyStartIdx should start lowercase (mid-sentence)
         let bodyWord = words[bodyStartIdx]
@@ -291,6 +302,62 @@ public class BookSnapPipeline {
     }
 
     return filtered.isEmpty ? observations : filtered
+  }
+
+  /// Sort observations into reading order by grouping into Y-bands (lines)
+  /// and sorting bands top-to-bottom. Within each band, preserves original order.
+  /// Uses the median line height as the Y-tolerance for grouping.
+  private static func sortReadingOrder(
+    _ observations: [VNRecognizedTextObservation]
+  ) -> [VNRecognizedTextObservation] {
+    guard observations.count > 2 else { return observations }
+
+    // Compute median observation height as the Y-tolerance
+    let heights = observations.map { $0.boundingBox.size.height }.sorted()
+    let medianHeight = heights[heights.count / 2]
+    let yTolerance = medianHeight * 0.75  // three-quarters of a line height
+
+    // Sort by Y center (descending = top-to-bottom in Vision coords)
+    // Then group consecutive observations that are within yTolerance
+    let indexed = observations.enumerated().map { ($0.offset, $0.element) }
+    let sorted = indexed.sorted {
+      let centerY0 = $0.1.boundingBox.origin.y + $0.1.boundingBox.size.height / 2.0
+      let centerY1 = $1.1.boundingBox.origin.y + $1.1.boundingBox.size.height / 2.0
+      return centerY0 > centerY1  // descending Y = top to bottom
+    }
+
+    // Group into Y-bands
+    var bands: [[Int]] = []  // each band is a list of original indices
+    var currentBand: [Int] = []
+    var bandY: CGFloat = 0
+
+    for (origIdx, obs) in sorted {
+      let midY = obs.boundingBox.origin.y + obs.boundingBox.size.height / 2.0
+      if currentBand.isEmpty {
+        currentBand = [origIdx]
+        bandY = midY
+      } else if abs(midY - bandY) <= yTolerance {
+        currentBand.append(origIdx)
+      } else {
+        bands.append(currentBand)
+        currentBand = [origIdx]
+        bandY = midY
+      }
+    }
+    if !currentBand.isEmpty {
+      bands.append(currentBand)
+    }
+
+    // Within each band, sort by original index to preserve Vision's within-line order
+    var result: [VNRecognizedTextObservation] = []
+    for band in bands {
+      let sortedBand = band.sorted()  // original order within the band
+      for idx in sortedBand {
+        result.append(observations[idx])
+      }
+    }
+
+    return result
   }
 
   private static func computeUnionBounds(
@@ -422,6 +489,113 @@ public class BookSnapPipeline {
     guard let output = filter.outputImage else { return nil }
     let context = CIContext()
     return context.createCGImage(output, from: output.extent)
+  }
+
+  /// Fix common OCR character confusions by trying known swap patterns and
+  /// validating corrections against UITextChecker's dictionary.
+  /// Only corrects words where exactly one swap produces a valid dictionary word.
+  private static func fixOCRConfusions(_ text: String) -> String {
+    let recognizer = NLLanguageRecognizer()
+    recognizer.processString(text)
+    guard let detectedLang = recognizer.dominantLanguage else { return text }
+
+    let langCode: String
+    switch detectedLang {
+    case .italian: langCode = "it"
+    case .german: langCode = "de"
+    case .french: langCode = "fr"
+    case .english: langCode = "en"
+    case .spanish: langCode = "es"
+    case .portuguese: langCode = "pt"
+    default: return text
+    }
+
+    let available = UITextChecker.availableLanguages
+    guard let checkerLang = available.first(where: { $0.hasPrefix(langCode) }) else { return text }
+
+    let checker = UITextChecker()
+    let nsText = text as NSString
+    let fullRange = NSRange(location: 0, length: nsText.length)
+
+    // OCR-confusable character pairs (single character swaps)
+    let confusablePairs: [(Character, Character)] = [
+      ("f", "t"), ("t", "f"),
+      ("l", "i"), ("i", "l"),
+    ]
+
+    var corrections: [(NSRange, String)] = []
+    var searchStart = 0
+
+    while searchStart < nsText.length {
+      let misspelledRange = checker.rangeOfMisspelledWord(
+        in: text,
+        range: fullRange,
+        startingAt: searchStart,
+        wrap: false,
+        language: checkerLang
+      )
+
+      guard misspelledRange.location != NSNotFound else { break }
+
+      let misspelled = nsText.substring(with: misspelledRange)
+      searchStart = misspelledRange.location + misspelledRange.length
+
+      // Skip short words and words with non-letter characters
+      guard misspelled.count >= 4 else { continue }
+      guard misspelled.allSatisfy({ $0.isLetter }) else { continue }
+
+      // Try each confusable swap at each character position
+      var validCandidates: [String] = []
+      let chars = Array(misspelled)
+
+      for idx in 0..<chars.count {
+        for (from, replacement) in confusablePairs {
+          let char = chars[idx]
+          // Match case-insensitively
+          let charLower = Character(char.lowercased())
+          if charLower == from {
+            var newChars = chars
+            // Preserve case
+            if char.isUppercase {
+              newChars[idx] = Character(String(replacement).uppercased())
+            } else {
+              newChars[idx] = replacement
+            }
+            let candidate = String(newChars)
+            if candidate == misspelled { continue }
+
+            // Check if this candidate is a valid word
+            let candidateNS = candidate as NSString
+            let candidateRange = NSRange(location: 0, length: candidateNS.length)
+            let check = checker.rangeOfMisspelledWord(
+              in: candidate,
+              range: candidateRange,
+              startingAt: 0,
+              wrap: false,
+              language: checkerLang
+            )
+            if check.location == NSNotFound {
+              // It's a valid word!
+              validCandidates.append(candidate)
+            }
+          }
+        }
+      }
+
+      // Only apply if exactly one valid candidate was found (unambiguous)
+      if validCandidates.count == 1 {
+        corrections.append((misspelledRange, validCandidates[0]))
+      }
+    }
+
+    guard !corrections.isEmpty else { return text }
+
+    var result = text as NSString
+    for (range, correction) in corrections.reversed() {
+      result = result.replacingCharacters(in: range, with: correction) as NSString
+    }
+
+    return result as String
   }
 
   private static func loadImage(from path: String) throws -> UIImage {

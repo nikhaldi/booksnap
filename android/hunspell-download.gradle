@@ -30,14 +30,29 @@ task downloadHunspellDictionaries {
       }
     }
 
-    // Download missing dictionaries
+    // Download missing dictionaries (with retry for rate limiting)
     hunspellLangsList.each { lang ->
       ["dic", "aff"].each { ext ->
         def target = new File(hunspellOutDir, "${lang}.${ext}")
         if (!target.exists()) {
           println "Downloading ${lang}.${ext}..."
-          new URL("${baseUrl}/${lang}/index.${ext}").withInputStream { is ->
-            target.bytes = is.bytes
+          def maxRetries = 3
+          for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              new URL("${baseUrl}/${lang}/index.${ext}").withInputStream { is ->
+                target.bytes = is.bytes
+              }
+              break
+            } catch (IOException e) {
+              if (attempt < maxRetries) {
+                def baseMsList = [2000, 4000, 10000]
+                def waitMs = baseMsList[attempt - 1] + new Random().nextInt(1000)
+                println "  Retry ${attempt}/${maxRetries} after ${(waitMs / 1000.0).round(1)}s (${e.message})"
+                Thread.sleep(waitMs)
+              } else {
+                throw e
+              }
+            }
           }
         }
       }

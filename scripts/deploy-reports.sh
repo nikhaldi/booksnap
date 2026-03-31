@@ -45,7 +45,7 @@ for platform in android ios; do
   rm -rf "$DEST"
   mkdir -p "$DEST"
 
-  PLATFORM_LABEL="$(echo "$platform" | sed 's/.*/\u&/') $VERSION"
+  PLATFORM_LABEL="$platform $VERSION"
 
   echo "Generating $platform report..."
   cd "$LAB_DIR"
