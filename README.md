@@ -123,7 +123,7 @@ Prerequisites (yes, there are many):
 pnpm run setup
 
 # Get the dataset currently used for training in the labs
-pnpm run dataset:download booksnap-base 0.1.0
+pnpm run dataset:download booksnap-base 0.2.0
 
 # Switch onto a lab branch and create your own local branch from it
 git checkout lab-android
