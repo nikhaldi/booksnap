@@ -76,6 +76,7 @@ android {
 }
 
 // Download Hunspell dictionaries for the configured languages at build time.
+ext.hunspellLangsList = hunspellLangsList
 ext.hunspellOutDir = file("src/main/assets/hunspell")
 apply from: "hunspell-download.gradle"
 

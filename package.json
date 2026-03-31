@@ -2,7 +2,6 @@
   "name": "react-native-booksnap",
   "version": "0.2.1",
   "description": "Extract text from a photo of a book page taken on a mobile device (Android, iOS, React Native)",
-  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -10,6 +9,7 @@
     "test": "vitest run",
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
     "test:ios": "bash ios/test-harness/scripts/run-tests.sh",
+    "test:integration": "bash scripts/integration-test.sh",
     "lint": "eslint src/",
     "lint:android": "bash android/scripts/ktlint.sh",
     "lint:ios": "bash ios/scripts/swiftlint.sh lint --strict",
@@ -51,7 +51,8 @@
     "ios/BookSnap.podspec",
     "expo-module.config.json",
     "plugin/",
-    "app.plugin.cjs"
+    "app.plugin.js",
+    "android/hunspell-download.gradle"
   ],
   "repository": {
     "type": "git",

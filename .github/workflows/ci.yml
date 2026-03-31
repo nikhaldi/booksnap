@@ -85,10 +85,15 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: pnpm install --frozen-lockfile
       - run: pnpm run publish:check
+      - run: pnpm run test:integration
       - run: npm publish --provenance --access public

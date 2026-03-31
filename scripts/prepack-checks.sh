@@ -49,8 +49,14 @@ fi
 # 5. Expo config plugin loads without errors
 PLUGIN_PATH=$(node -e "const c=require('./expo-module.config.json'); console.log(c.configPlugin || '')" 2>/dev/null)
 if [ -n "$PLUGIN_PATH" ]; then
-  if ! node --input-type=module -e "import('$PLUGIN_PATH')" 2>/dev/null; then
+  if ! node -e "require('$PLUGIN_PATH')" 2>/dev/null; then
     echo "ERROR: Expo config plugin at $PLUGIN_PATH failed to load."
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+if [ -f "app.plugin.js" ]; then
+  if ! node -e "require('./app.plugin.js')" 2>/dev/null; then
+    echo "ERROR: app.plugin.js failed to load."
     ERRORS=$((ERRORS + 1))
   fi
 fi
