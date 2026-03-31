@@ -19,6 +19,8 @@ BookSnap is currently bundled as a React Native (Expo) library, with the core lo
 npx expo install react-native-booksnap
 ```
 
+Requires Android minSdkVersion 26 or higher (the config plugin sets this automatically).
+
 ## Usage (React Native)
 
 ```ts
