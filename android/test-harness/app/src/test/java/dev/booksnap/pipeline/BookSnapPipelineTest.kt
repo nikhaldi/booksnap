@@ -119,6 +119,29 @@ class BookSnapPipelineTest {
             assertFalse("Body text should not contain page number", result.text.contains("42"))
         }
 
+    @Test
+    fun `all lines filtered returns zero text bounds`() =
+        runTest {
+            // All lines are short, all-caps, in the top margin — they should all be
+            // filtered as running headers, leaving empty text and a zero bounding box.
+            // This also exercises the undeskewBounds guard on zero bounds.
+            val engine =
+                mockEngineWithBlocks(
+                    listOf(
+                        ocrBlock("CHAPTER TITLE", Rect(100, 10, 400, 40)),
+                        ocrBlock("AUTHOR NAME 42", Rect(100, 50, 400, 80)),
+                    ),
+                )
+            val pipeline = createPipeline(engine)
+
+            val result = pipeline.processImage(testImagePath())
+            assertEquals("Text should be empty when all lines are filtered", "", result.text)
+            assertEquals("textBounds.x should be 0", 0, result.textBounds.x)
+            assertEquals("textBounds.y should be 0", 0, result.textBounds.y)
+            assertEquals("textBounds.width should be 0", 0, result.textBounds.width)
+            assertEquals("textBounds.height should be 0", 0, result.textBounds.height)
+        }
+
     // -- Spell correction --
 
     @Test
