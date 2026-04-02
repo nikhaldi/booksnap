@@ -1,6 +1,6 @@
 {
   "name": "react-native-booksnap",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Extract text from a photo of a book page taken on a mobile device (Android, iOS, React Native)",
   "main": "src/index.ts",
   "types": "src/index.ts",
