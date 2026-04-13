@@ -97,7 +97,7 @@ dependencies {
 
     // Instrumented tests (emulator)
     androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("com.google.code.gson:gson:2.11.0")
 }
