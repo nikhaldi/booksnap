@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 val hunspellLangsStr = findProperty("hunspell.langs") as? String ?: "en,en-GB,fr,de,it"
@@ -31,8 +30,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        jvmToolchain(17)
     }
 
     testOptions {
@@ -52,8 +51,8 @@ android {
     // The agent's pipeline implementation is copied by the daemon into src/pipeline/java/.
     sourceSets {
         getByName("main") {
-            java.srcDir("../../src/shared/java")
-            java.srcDir("src/pipeline/java")
+            kotlin.directories.add("../../src/shared/java")
+            kotlin.directories.add("src/pipeline/java")
         }
     }
 }
