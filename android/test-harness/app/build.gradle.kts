@@ -74,7 +74,7 @@ dependencies {
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
 
     // Image processing
-    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("org.opencv:opencv:4.9.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
