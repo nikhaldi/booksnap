@@ -101,7 +101,7 @@ Each platform has its own lab in [`android/lab/`](android/lab/) and [`ios/lab/`]
 
 ### Metrics & quality control
 
-Curent experiment progress plot:
+Current experiment progress plot:
 
 ![Experiment Progress](https://nikhaldi.github.io/booksnap/progress.png)
 
