@@ -34,16 +34,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: android/scripts/.ktlint-*
           key: ktlint-${{ hashFiles('android/scripts/ktlint.sh') }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             android/src/main/assets/hunspell
@@ -57,7 +57,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ios/scripts/.swiftlint-*
           key: swiftlint-${{ hashFiles('ios/scripts/swiftlint.sh') }}
