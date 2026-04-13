@@ -9,7 +9,7 @@ description = "Shared utilities for booksnap research labs"
 requires-python = ">=3.12"
 dependencies = [
     "autoresearch-lab[plot]>=0.2.5,<0.3",
-    "jiwer>=3.0",
+    "jiwer>=4.0.0",
     "Pillow>=12.2.0",
 ]
 
