@@ -22,6 +22,7 @@
     "reports:generate": "bash scripts/generate-reports.sh",
     "reports:deploy": "bash scripts/deploy-reports.sh",
     "simulator:boot": "bash ios/scripts/boot-simulator.sh",
+    "emulator:boot": "bash android/scripts/boot-emulator.sh",
     "publish:check": "bash scripts/prepack-checks.sh"
   },
   "devDependencies": {
