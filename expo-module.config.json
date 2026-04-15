@@ -7,5 +7,5 @@
   "android": {
     "modules": ["dev.booksnap.module.BookSnapModule"]
   },
-  "configPlugin": "./plugin/index.js"
+  "configPlugin": "./plugin/index.cjs"
 }
