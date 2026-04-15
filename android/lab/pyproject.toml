@@ -7,7 +7,7 @@ packages = ["backends"]
 
 [project]
 name = "booksnap-android-lab"
-version = "0.1.0"
+version = "0.0.0dev"
 description = "Autoresearch lab for BookSnap Android OCR pipeline"
 requires-python = ">=3.12"
 dependencies = [

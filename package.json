@@ -1,22 +1,29 @@
 {
   "name": "react-native-booksnap",
-  "version": "0.1.0",
+  "version": "0.2.4",
   "description": "Extract text from a photo of a book page taken on a mobile device (Android, iOS, React Native)",
-  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "setup": "pnpm install && bash android/test-harness/scripts/download-dictionaries.sh",
+    "setup": "pnpm install",
     "test": "vitest run",
     "test:android": "cd android/test-harness && ./gradlew cleanTestDebugUnitTest testDebugUnitTest",
     "test:ios": "bash ios/test-harness/scripts/run-tests.sh",
+    "test:integration": "bash scripts/integration-test.sh",
     "lint": "eslint src/",
     "lint:android": "bash android/scripts/ktlint.sh",
     "lint:ios": "bash ios/scripts/swiftlint.sh lint --strict",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "format:android": "bash android/scripts/ktlint.sh -F",
-    "format:ios": "bash ios/scripts/swiftlint.sh lint --fix && bash ios/scripts/swiftlint.sh lint --strict"
+    "format:ios": "bash ios/scripts/swiftlint.sh lint --fix && bash ios/scripts/swiftlint.sh lint --strict",
+    "dataset:pack": "bash -c 'tar -czf \"$1.tar.gz\" --exclude=.DS_Store -C datasets \"$1\"' --",
+    "dataset:download": "bash -c 'curl -fsSL \"https://github.com/nikhaldi/booksnap/releases/download/dataset-$1-$2/$1.tar.gz\" | tar -xz -C datasets' --",
+    "reports:generate": "bash scripts/generate-reports.sh",
+    "reports:deploy": "bash scripts/deploy-reports.sh",
+    "simulator:boot": "bash ios/scripts/boot-simulator.sh",
+    "emulator:boot": "bash android/scripts/boot-emulator.sh",
+    "publish:check": "bash scripts/prepack-checks.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -25,6 +32,7 @@
     "prettier": "^3.8.1",
     "typescript": "^5",
     "typescript-eslint": "^8.57.2",
+    "vite": "^8.0.5",
     "vitest": "^4.0.18"
   },
   "keywords": [
@@ -35,6 +43,24 @@
     "text-recognition",
     "document-scanning"
   ],
+  "files": [
+    "src/",
+    "!src/**/*.test.*",
+    "android/src/",
+    "android/build.gradle",
+    "android/hunspell-download.gradle",
+    "ios/*.swift",
+    "ios/pipeline/",
+    "ios/BookSnap.podspec",
+    "expo-module.config.json",
+    "plugin/",
+    "app.plugin.js",
+    "android/hunspell-download.gradle"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikhaldi/booksnap.git"
+  },
   "packageManager": "pnpm@9.15.4",
   "license": "MIT",
   "peerDependencies": {
