@@ -1,8 +1,11 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
+// Read version from the single source of truth (package.json)
+def packageJson = new groovy.json.JsonSlurper().parse(file("../package.json"))
+
 group = 'dev.booksnap'
-version = '0.1.0'
+version = packageJson.version
 
 buildscript {
   def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
@@ -32,7 +35,7 @@ buildscript {
   }
 }
 
-def hunspellLangsStr = findProperty("hunspell.langs") ?: "en,en-GB,fr,de,it"
+def hunspellLangsStr = findProperty("hunspell.langs") ?: "en"
 def hunspellLangsList = hunspellLangsStr.split(",").collect { it.trim() }
 
 android {
@@ -52,7 +55,7 @@ android {
     minSdkVersion safeExtGet("minSdkVersion", 26)
     targetSdkVersion safeExtGet("targetSdkVersion", 34)
     versionCode 1
-    versionName "0.1.0"
+    versionName packageJson.version
 
     buildConfigField "String", "HUNSPELL_LANGS", "\"${hunspellLangsStr}\""
   }
@@ -72,23 +75,16 @@ android {
   }
 }
 
-// Copy only the Hunspell dictionaries matching HUNSPELL_LANGS into assets.
-// Source dictionaries are shared with the test harness.
-def hunspellAllDir = file("test-harness/app/src/main/assets/hunspell-all")
-def hunspellOutDir = file("src/main/assets/hunspell")
+// Download Hunspell dictionaries for the configured languages at build time.
+ext.hunspellLangsList = hunspellLangsList
+ext.hunspellOutDir = file("src/main/assets/hunspell")
+apply from: "hunspell-download.gradle"
 
-task copyHunspellDictionaries(type: Sync) {
-  from(hunspellAllDir) {
-    include hunspellLangsList.collectMany { lang -> ["${lang}.dic", "${lang}.aff"] }
-  }
-  into hunspellOutDir
-}
-
-// Ensure dictionaries are copied before any task that reads assets or runs lint
+// Ensure dictionaries are downloaded before any task that reads assets or runs lint
 tasks.configureEach { task ->
-  if (task != copyHunspellDictionaries &&
+  if (task != downloadHunspellDictionaries &&
       (task.name.contains("Assets") || task.name.contains("Lint") || task.name.contains("lint"))) {
-    task.dependsOn copyHunspellDictionaries
+    task.dependsOn downloadHunspellDictionaries
   }
 }
 
@@ -101,11 +97,11 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
   // OCR
   implementation "com.google.mlkit:text-recognition:16.0.1"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2"
   implementation "androidx.exifinterface:exifinterface:1.3.7"
 
   // Image processing
-  implementation "org.opencv:opencv:4.9.0"
+  implementation "org.opencv:opencv:4.13.0"
 
   // Language detection
   implementation "com.google.mlkit:language-id:17.0.6"

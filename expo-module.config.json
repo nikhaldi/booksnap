@@ -6,5 +6,6 @@
   },
   "android": {
     "modules": ["dev.booksnap.module.BookSnapModule"]
-  }
+  },
+  "configPlugin": "./plugin/index.cjs"
 }

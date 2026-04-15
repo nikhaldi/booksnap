@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 val hunspellLangsStr = findProperty("hunspell.langs") as? String ?: "en,en-GB,fr,de,it"
@@ -31,8 +30,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        jvmToolchain(17)
     }
 
     testOptions {
@@ -52,16 +51,16 @@ android {
     // The agent's pipeline implementation is copied by the daemon into src/pipeline/java/.
     sourceSets {
         getByName("main") {
-            java.srcDir("../../src/shared/java")
-            java.srcDir("src/pipeline/java")
+            kotlin.directories.add("../../src/shared/java")
+            kotlin.directories.add("src/pipeline/java")
         }
     }
 }
 
 dependencies {
     // Core
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // --- Pre-installed libraries available to the pipeline ---
     // The agent can use any of these without modifying dependencies.gradle.
@@ -74,7 +73,7 @@ dependencies {
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
 
     // Image processing
-    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("org.opencv:opencv:4.9.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
@@ -92,14 +91,14 @@ dependencies {
     // JVM unit tests (Robolectric)
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests (emulator)
     androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("com.google.code.gson:gson:2.11.0")
+    androidTestImplementation("com.google.code.gson:gson:2.13.2")
 }
 
 // Sync pipeline source from the library into the harness before compilation.
@@ -115,18 +114,13 @@ tasks.matching { it.name.contains("compile", ignoreCase = true) && it.name.conta
     dependsOn(syncPipeline)
 }
 
-// Copy only the Hunspell dictionaries matching HUNSPELL_LANGS into assets.
-// Source dictionaries live in src/main/assets/hunspell-all/; the build copies
-// only the needed .dic/.aff files into src/main/assets/hunspell/ before compile.
-val copyHunspell = tasks.register<Sync>("copyHunspellDictionaries") {
-    from("src/main/assets/hunspell-all") {
-        include(hunspellLangs.flatMap { lang -> listOf("$lang.dic", "$lang.aff") })
-    }
-    into("src/main/assets/hunspell")
-}
+// Download Hunspell dictionaries for the configured languages at build time.
+extra["hunspellLangsList"] = hunspellLangs
+extra["hunspellOutDir"] = file("src/main/assets/hunspell")
+apply(from = "../../../android/hunspell-download.gradle")
 
 tasks.matching { it.name.startsWith("merge") && it.name.contains("Assets") }.configureEach {
-    dependsOn(copyHunspell)
+    dependsOn("downloadHunspellDictionaries")
 }
 
 // Apply pipeline-declared dependencies if present
