@@ -76,6 +76,7 @@ android {
 }
 
 // Download Hunspell dictionaries for the configured languages at build time.
+ext.hunspellLangsList = hunspellLangsList
 ext.hunspellOutDir = file("src/main/assets/hunspell")
 apply from: "hunspell-download.gradle"
 
@@ -96,11 +97,11 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
   // OCR
   implementation "com.google.mlkit:text-recognition:16.0.1"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2"
   implementation "androidx.exifinterface:exifinterface:1.3.7"
 
   // Image processing
-  implementation "org.opencv:opencv:4.9.0"
+  implementation "org.opencv:opencv:4.13.0"
 
   // Language detection
   implementation "com.google.mlkit:language-id:17.0.6"

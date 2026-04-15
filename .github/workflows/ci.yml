@@ -10,9 +10,9 @@ jobs:
   test-ts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -24,26 +24,26 @@ jobs:
   test-android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: ~/.gradle/caches
           key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: android/scripts/.ktlint-*
           key: ktlint-${{ hashFiles('android/scripts/ktlint.sh') }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           path: |
             android/src/main/assets/hunspell
@@ -56,8 +56,8 @@ jobs:
   test-ios:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
         with:
           path: ios/scripts/.swiftlint-*
           key: swiftlint-${{ hashFiles('ios/scripts/swiftlint.sh') }}
@@ -78,17 +78,22 @@ jobs:
 
   publish:
     needs: [ci]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org
+          distribution: temurin
+          java-version: 17
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run publish:check
+      - run: pnpm run test:integration
       - run: npm publish --provenance --access public

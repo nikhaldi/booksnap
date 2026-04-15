@@ -6,5 +6,5 @@ export default [
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,
-  { ignores: ["build/", "node_modules/", "plugin/"] },
+  { ignores: ["build/", "node_modules/", "plugin/", "app.plugin.js"] },
 ];

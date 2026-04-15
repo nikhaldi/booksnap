@@ -19,6 +19,8 @@ BookSnap is currently bundled as a React Native (Expo) library, with the core lo
 npx expo install react-native-booksnap
 ```
 
+Requires Android minSdkVersion 26 or higher (the config plugin sets this automatically).
+
 ## Usage (React Native)
 
 ```ts
@@ -82,6 +84,8 @@ BookSnap downloads Hunspell dictionaries at Android build time for spell correct
 
 BookSnap has been tested with `en`, `en-GB`, `fr`, `de`, `it` but any language code from the [wooorm/dictionaries](https://github.com/wooorm/dictionaries) repository can be used.
 
+**Note on dictionary licenses:** Each dictionary has its own license (e.g. MIT/BSD for English, MPL-2.0 for French, GPL for German and Italian). These dictionaries are downloaded at build time and bundled into your (Android) app. Check the license for each dictionary you include to ensure compliance with your distribution requirements. See the [individual dictionary directories](https://github.com/wooorm/dictionaries/tree/main/dictionaries) for details.
+
 ## Development
 
 ### Autoresearch Lab
@@ -96,6 +100,10 @@ Each platform has its own lab in [`android/lab/`](android/lab/) and [`ios/lab/`]
 - **results.tsv** - a record of kept and discarded experiments so far
 
 ### Metrics & quality control
+
+Current experiment progress plot:
+
+![Experiment Progress](https://nikhaldi.github.io/booksnap/progress.png)
 
 Per-sample accuracy reports for each release are published at [nikhaldi.github.io/booksnap](https://nikhaldi.github.io/booksnap/).
 
@@ -121,7 +129,7 @@ Prerequisites (yes, there are many):
 pnpm run setup
 
 # Get the dataset currently used for training in the labs
-curl -fsSL https://github.com/nikhaldi/booksnap/releases/download/dataset-booksnap-base-0.1.0/booksnap-base.tar.gz | tar -xz -C datasets
+pnpm run dataset:download booksnap-base 0.2.0
 
 # Switch onto a lab branch and create your own local branch from it
 git checkout lab-android
@@ -179,6 +187,10 @@ pnpm run test:ios
 Datasets are collections of book page photos with ground truth text, used to evaluate the text recognition pipeline.
 
 Each dataset must contain images and a `ground_truth.json` manifest conforming to [`datasets/schema.json`](datasets/schema.json).
+
+## Releasing
+
+See [RELEASING.md](RELEASING.md).
 
 ## License
 

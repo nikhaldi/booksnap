@@ -23,7 +23,7 @@ if ! git diff --quiet package.json; then
 fi
 
 # 2. No test files in package
-TEST_FILES=$(npm pack --dry-run 2>&1 | grep -E '\.(test|spec)\.' || true)
+TEST_FILES=$(npm pack --dry-run 2>&1 | grep 'npm notice' | grep -E '\.(test|spec)\.' || true)
 if [ -n "$TEST_FILES" ]; then
   echo "ERROR: Test files found in package:"
   echo "$TEST_FILES"
@@ -31,7 +31,7 @@ if [ -n "$TEST_FILES" ]; then
 fi
 
 # 3. No dev/config files leaking
-LEAKED=$(npm pack --dry-run 2>&1 | grep -iE '(\.env|\.eslint|vitest\.config|jest\.config|\.swiftlint|\.gitignore|tsconfig)' || true)
+LEAKED=$(npm pack --dry-run 2>&1 | grep 'npm notice' | grep -iE '(\.env|\.eslint|vitest\.config|jest\.config|\.swiftlint|\.gitignore|tsconfig)' || true)
 if [ -n "$LEAKED" ]; then
   echo "ERROR: Dev/config files found in package:"
   echo "$LEAKED"
@@ -46,7 +46,31 @@ if [ "$SIZE_UNIT" = "MB" ] || ([ "$SIZE_UNIT" = "kB" ] && [ "$(echo "$SIZE_KB > 
   ERRORS=$((ERRORS + 1))
 fi
 
-# 5. Version in package.json matches git tag (if running in CI on a release)
+# 5. Expo config plugin loads without errors
+PLUGIN_PATH=$(node -e "const c=require('./expo-module.config.json'); console.log(c.configPlugin || '')" 2>/dev/null)
+if [ -n "$PLUGIN_PATH" ]; then
+  if ! node -e "require('$PLUGIN_PATH')" 2>/dev/null; then
+    echo "ERROR: Expo config plugin at $PLUGIN_PATH failed to load."
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+if [ -f "app.plugin.js" ]; then
+  if ! node -e "require('./app.plugin.js')" 2>/dev/null; then
+    echo "ERROR: app.plugin.js failed to load."
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# 6. Files referenced by build.gradle are included in the package
+PACK_FILES=$(npm pack --dry-run 2>&1)
+for ref in $(grep -oE "apply from:.*\"([^\"]+)\"" android/build.gradle | grep -oE '"[^"]+"' | tr -d '"'); do
+  if ! echo "$PACK_FILES" | grep -q "android/$ref"; then
+    echo "ERROR: android/build.gradle references '$ref' but it's not in the published package."
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+# 7. Version in package.json matches git tag (if running in CI on a release)
 if [ -n "$GITHUB_REF" ] && echo "$GITHUB_REF" | grep -q '^refs/tags/'; then
   GIT_TAG=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
   PKG_VERSION=$(python3 -c "import json; print(json.load(open('package.json'))['version'])")
