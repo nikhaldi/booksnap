@@ -101,6 +101,10 @@ Each platform has its own lab in [`android/lab/`](android/lab/) and [`ios/lab/`]
 
 ### Metrics & quality control
 
+Current experiment progress plot:
+
+![Experiment Progress](https://nikhaldi.github.io/booksnap/progress.png)
+
 Per-sample accuracy reports for each release are published at [nikhaldi.github.io/booksnap](https://nikhaldi.github.io/booksnap/).
 
 During development you can generate a report yourself when inside a lab:

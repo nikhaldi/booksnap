@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
 }
 
 val hunspellLangsStr = findProperty("hunspell.langs") as? String ?: "en,en-GB,fr,de,it"
@@ -31,8 +30,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        jvmToolchain(17)
     }
 
     testOptions {
@@ -52,16 +51,16 @@ android {
     // The agent's pipeline implementation is copied by the daemon into src/pipeline/java/.
     sourceSets {
         getByName("main") {
-            java.srcDir("../../src/shared/java")
-            java.srcDir("src/pipeline/java")
+            kotlin.directories.add("../../src/shared/java")
+            kotlin.directories.add("src/pipeline/java")
         }
     }
 }
 
 dependencies {
     // Core
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // --- Pre-installed libraries available to the pipeline ---
     // The agent can use any of these without modifying dependencies.gradle.
@@ -74,7 +73,7 @@ dependencies {
     implementation("com.google.mlkit:text-recognition-korean:16.0.1")
 
     // Image processing
-    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("org.opencv:opencv:4.9.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
@@ -92,14 +91,14 @@ dependencies {
     // JVM unit tests (Robolectric)
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests (emulator)
     androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("com.google.code.gson:gson:2.11.0")
+    androidTestImplementation("com.google.code.gson:gson:2.13.2")
 }
 
 // Sync pipeline source from the library into the harness before compilation.
