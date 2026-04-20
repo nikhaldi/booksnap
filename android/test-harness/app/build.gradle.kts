@@ -95,7 +95,7 @@ dependencies {
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
     // Instrumented tests (emulator)
-    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("com.google.code.gson:gson:2.13.2")
