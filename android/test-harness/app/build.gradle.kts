@@ -74,7 +74,7 @@ dependencies {
 
     // Image processing
     implementation("androidx.exifinterface:exifinterface:1.4.2")
-    implementation("org.opencv:opencv:4.9.0")
+    implementation("org.opencv:opencv:4.13.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
     // Alternative OCR engine
@@ -92,7 +92,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
-    testImplementation("org.openpnp:opencv:4.9.0-0")
+    testImplementation("org.openpnp:opencv:4.13.0-0")
 
     // Instrumented tests (emulator)
     androidTestImplementation("androidx.test:runner:1.7.0")
