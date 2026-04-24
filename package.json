@@ -68,5 +68,10 @@
     "expo-modules-core": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "pnpm": {
+    "overrides": {
+      "uuid@<14.0.0": "^14.0.0"
+    }
   }
 }
