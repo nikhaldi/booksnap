@@ -98,7 +98,7 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("com.google.code.gson:gson:2.13.2")
+    androidTestImplementation("com.google.code.gson:gson:2.14.0")
 }
 
 // Sync pipeline source from the library into the harness before compilation.
