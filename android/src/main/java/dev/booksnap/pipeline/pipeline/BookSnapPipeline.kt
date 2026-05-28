@@ -35,6 +35,10 @@ class BookSnapPipeline(
     private lateinit var engine: OcrEngine
     private var langDetector: LanguageDetector? = null
     private val hunspellCheckers = mutableMapOf<String, Hunspell>()
+
+    // Lowercased literal hyphenated entries from each loaded .dic, used to bypass Hunspell's
+    // BREAK '-' directive when validating whole hyphenated tokens.
+    private val hyphenatedEntries = mutableSetOf<String>()
     private var spellCheckEnabled = true
 
     override suspend fun initialize(
@@ -51,12 +55,18 @@ class BookSnapPipeline(
             for (lang in langs) {
                 try {
                     val affStream = BufferedInputStream(context.assets.open("hunspell/$lang.aff"))
-                    val dicStream = BufferedInputStream(context.assets.open("hunspell/$lang.dic"))
+                    val dicBytes = context.assets.open("hunspell/$lang.dic").use { it.readBytes() }
                     val tempDir = ByteBuffersDirectory()
-                    val dict = HunspellDictionary(tempDir, "hunspell_$lang", affStream, dicStream)
+                    val dict =
+                        HunspellDictionary(
+                            tempDir,
+                            "hunspell_$lang",
+                            affStream,
+                            java.io.ByteArrayInputStream(dicBytes),
+                        )
                     hunspellCheckers[lang] = Hunspell(dict)
                     affStream.close()
-                    dicStream.close()
+                    collectHyphenatedEntries(dicBytes, hyphenatedEntries)
                 } catch (e: Exception) {
                     // skip unavailable dictionaries
                 }
@@ -994,7 +1004,26 @@ class BookSnapPipeline(
      */
     private fun isValidInAnyDict(word: String): Boolean {
         val lower = word.lowercase()
+        if ('-' in word && lower in hyphenatedEntries) return true
         return hunspellCheckers.values.any { it.spell(word) || it.spell(lower) }
+    }
+
+    // Parses a Hunspell .dic byte stream and adds lowercased hyphenated entries
+    // (stripped of /FLAGS) to the target set. Skips the count on line 1.
+    private fun collectHyphenatedEntries(
+        dicBytes: ByteArray,
+        target: MutableSet<String>,
+    ) {
+        dicBytes.inputStream().bufferedReader(Charsets.UTF_8).useLines { lines ->
+            lines.drop(1).forEach { rawLine ->
+                val line = rawLine.trim()
+                if (line.isEmpty() || line.startsWith("#")) return@forEach
+                val word = line.substringBefore('/').substringBefore('\t')
+                if ('-' in word && word.length > 1) {
+                    target.add(word.lowercase())
+                }
+            }
+        }
     }
 
     private fun spellCorrectText(
@@ -1006,7 +1035,13 @@ class BookSnapPipeline(
         while (i < text.length) {
             if (text[i].isLetter()) {
                 val start = i
-                while (i < text.length && text[i].isLetter()) i++
+                // Consume letters plus interior hyphens (letter-hyphen-letter), so
+                // hyphenated compounds like "peut-être" are treated as a single token.
+                while (i < text.length &&
+                    (text[i].isLetter() || (text[i] == '-' && i + 1 < text.length && text[i + 1].isLetter()))
+                ) {
+                    i++
+                }
                 val word = text.substring(start, i)
                 // Skip spell correction for words that form part of a contraction (e.g., "doesn" before "'t")
                 val beforeApostrophe = i < text.length - 1 && text[i] == '\'' && text[i + 1].isLetter()
@@ -1045,8 +1080,13 @@ class BookSnapPipeline(
         val lower = word.lowercase()
         val candidates = mutableSetOf<String>()
 
-        // Helper: check candidate in both lowercase and capitalized forms
-        fun spellValid(c: String): Boolean = checker.spell(c) || checker.spell(c.replaceFirstChar { it.uppercase() })
+        // Helper: check candidate in both lowercase and capitalized forms.
+        // For hyphenated candidates, look up the literal compound in the .dic-derived set
+        // to avoid Hunspell's BREAK '-' directive splitting and validating segment-by-segment.
+        fun spellValid(c: String): Boolean {
+            if ('-' in c) return c.lowercase() in hyphenatedEntries
+            return checker.spell(c) || checker.spell(c.replaceFirstChar { it.uppercase() })
+        }
 
         // Deletions (remove one character)
         for (j in lower.indices) {
