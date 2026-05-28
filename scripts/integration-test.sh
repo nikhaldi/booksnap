@@ -64,7 +64,7 @@ EOF
 
 # 3. Install dependencies + library from tarball
 echo "Installing dependencies..."
-npm install expo@55 react react-native@0.83 expo-modules-core 2>&1 | tail -1
+npm install expo@55 react react-native@0.83 2>&1 | tail -1
 npm install "./$TARBALL" 2>&1 | tail -1
 
 # 4. Verify config plugin loads
