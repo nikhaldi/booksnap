@@ -491,10 +491,26 @@ public class BookSnapPipeline {
     return context.createCGImage(output, from: output.extent)
   }
 
+  /// OCR-confusable character pairs (single character swaps).
+  /// The accent variants catch frequent French-text mis-recognitions like
+  /// "peut-étre" → "peut-être" and "tres" → "très" where Vision drops or
+  /// alters the accent on a letter.
+  private static let confusablePairs: [(Character, Character)] = [
+    ("f", "t"), ("t", "f"),
+    ("l", "i"), ("i", "l"),
+    ("é", "ê"), ("ê", "é"),
+    ("é", "è"), ("è", "é"),
+    ("é", "e"), ("e", "é"),
+    ("è", "e"), ("e", "è"),
+    ("ê", "e"), ("e", "ê"),
+    ("g", "q"), ("q", "g"),
+  ]
+
   /// Fix common OCR character confusions by trying known swap patterns and
   /// validating corrections against UITextChecker's dictionary.
   /// Only corrects words where exactly one swap produces a valid dictionary word.
-  private static func fixOCRConfusions(_ text: String) -> String {
+  /// Internal (not private) so tests can exercise it without rendering and OCR'ing an image.
+  internal static func fixOCRConfusions(_ text: String) -> String {
     let recognizer = NLLanguageRecognizer()
     recognizer.processString(text)
     guard let detectedLang = recognizer.dominantLanguage else { return text }
@@ -517,12 +533,6 @@ public class BookSnapPipeline {
     let nsText = text as NSString
     let fullRange = NSRange(location: 0, length: nsText.length)
 
-    // OCR-confusable character pairs (single character swaps)
-    let confusablePairs: [(Character, Character)] = [
-      ("f", "t"), ("t", "f"),
-      ("l", "i"), ("i", "l"),
-    ]
-
     var corrections: [(NSRange, String)] = []
     var searchStart = 0
 
@@ -540,16 +550,19 @@ public class BookSnapPipeline {
       let misspelled = nsText.substring(with: misspelledRange)
       searchStart = misspelledRange.location + misspelledRange.length
 
-      // Skip short words and words with non-letter characters
+      // Skip short words and words with non-letter characters.
+      // Interior hyphens are allowed so hyphenated compounds like "vingt-cing"
+      // can be corrected; we just won't apply swaps at hyphen positions.
       guard misspelled.count >= 4 else { continue }
-      guard misspelled.allSatisfy({ $0.isLetter }) else { continue }
+      guard misspelled.allSatisfy({ $0.isLetter || $0 == "-" }) else { continue }
+      guard misspelled.first != "-", misspelled.last != "-" else { continue }
 
       // Try each confusable swap at each character position
       var validCandidates: [String] = []
       let chars = Array(misspelled)
 
       for idx in 0..<chars.count {
-        for (from, replacement) in confusablePairs {
+        for (from, replacement) in Self.confusablePairs {
           let char = chars[idx]
           // Match case-insensitively
           let charLower = Character(char.lowercased())
