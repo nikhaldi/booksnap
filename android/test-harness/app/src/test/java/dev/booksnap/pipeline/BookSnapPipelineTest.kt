@@ -168,6 +168,35 @@ class BookSnapPipelineTest {
             assertSpellCorrection("it", "it", "La famigkia era grande.", "famigkia", "famiglia")
         }
 
+    @Test
+    fun `spell correction fixes typo in hyphenated French compound`() =
+        runTest {
+            // "vingt-cinq" is a literal French .dic entry; "vingt-cing" is edit-1 away.
+            assertSpellCorrection("fr", "fr", "Il a vingt-cing ans.", "vingt-cing", "vingt-cinq")
+        }
+
+    @Test
+    fun `spell correction restores circumflex on peut-être`() =
+        runTest {
+            // Common OCR failure: "peut-être" loses the circumflex, becoming "peut-étre".
+            assertSpellCorrection("fr", "fr", "C'est peut-étre vrai.", "peut-étre", "peut-être")
+        }
+
+    @Test
+    fun `spell correction preserves valid hyphenated French compound`() =
+        runTest {
+            assertSpellCorrectionUnchanged("fr", "fr", "C'est peut-être vrai.", "peut-être")
+        }
+
+    @Test
+    fun `spell correction leaves unknown hyphenated proper noun alone`() =
+        runTest {
+            // Per-segment correction would have turned "Euverte" into the valid French word
+            // "ouverte". With whole-compound .dic lookup as the only validation, no candidate
+            // matches and the proper noun passes through untouched.
+            assertSpellCorrectionUnchanged("fr", "fr", "Madame de Saint-Euverte arriva.", "Saint-Euverte")
+        }
+
     // -- Helpers --
 
     private fun testImagePath(): String {
@@ -201,6 +230,34 @@ class BookSnapPipelineTest {
         object : OcrEngine {
             override suspend fun recognize(bitmap: Bitmap) = blocks
         }
+
+    private suspend fun assertSpellCorrectionUnchanged(
+        language: String,
+        hunspellLangs: String,
+        inputText: String,
+        token: String,
+    ) {
+        val langDetector =
+            object : LanguageDetector {
+                override suspend fun identifyLanguage(text: String) = language
+            }
+        val engine =
+            mockEngineWithBlocks(
+                listOf(ocrBlock(inputText, Rect(50, 300, 900, 340))),
+            )
+        val pipeline = BookSnapPipeline(ocrEngine = engine, languageDetector = langDetector)
+        pipeline.initialize(
+            RuntimeEnvironment.getApplication(),
+            mapOf("spellCheck" to true, "hunspellLangs" to hunspellLangs),
+        )
+        activePipeline = pipeline
+
+        val result = pipeline.processImage(testImagePath())
+        assertTrue(
+            "[$language] Should preserve '$token' unchanged: got '${result.text}'",
+            result.text.contains(token),
+        )
+    }
 
     private suspend fun assertSpellCorrection(
         language: String,
