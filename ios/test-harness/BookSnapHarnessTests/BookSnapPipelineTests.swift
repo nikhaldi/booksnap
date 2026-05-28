@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 @testable import BookSnapHarness
 
@@ -129,6 +130,50 @@ final class BookSnapPipelineTests: XCTestCase {
             // Page number is at the bottom, so its y should be in the lower portion of the image
             XCTAssertGreaterThan(bounds.y, Int(size.height) / 2, "Page number should be in lower half")
         }
+    }
+
+    // MARK: - Spell correction
+
+    /// Invariant: UITextChecker accepts common French hyphenated compounds as valid words.
+    /// fixOCRConfusions relies on this to leave already-correct compounds untouched.
+    func testUITextCheckerAcceptsValidFrenchCompounds() throws {
+        guard let lang = UITextChecker.availableLanguages.first(where: { $0.hasPrefix("fr") }) else {
+            throw XCTSkip("French language unavailable on this simulator")
+        }
+        let checker = UITextChecker()
+        for word in ["peut-être", "vingt-cinq", "c'est-à-dire", "soi-même", "au-dessus"] {
+            let range = checker.rangeOfMisspelledWord(
+                in: word,
+                range: NSRange(location: 0, length: (word as NSString).length),
+                startingAt: 0,
+                wrap: false,
+                language: lang
+            )
+            XCTAssertEqual(
+                range.location, NSNotFound,
+                "Expected UITextChecker to accept '\(word)', but it was flagged at \(range)"
+            )
+        }
+    }
+
+    func testFixOCRConfusionsCorrectsHyphenatedFrenchCompound() {
+        // "vingt-cinq" is a valid French entry; "vingt-cing" is g→q away.
+        let result = BookSnapPipeline.fixOCRConfusions("Il a vingt-cing ans.")
+        XCTAssertEqual(result, "Il a vingt-cinq ans.")
+    }
+
+    func testFixOCRConfusionsRestoresCircumflexOnPeutEtre() {
+        // Common OCR failure: "peut-être" loses the circumflex, becoming "peut-étre".
+        let result = BookSnapPipeline.fixOCRConfusions("C'est peut-étre vrai.")
+        XCTAssertEqual(result, "C'est peut-être vrai.")
+    }
+
+    func testFixOCRConfusionsLeavesUnknownHyphenatedProperNounAlone() {
+        // None of the confusable swaps produce a valid candidate for "Saint-Euverte",
+        // so the proper noun must pass through untouched.
+        let input = "Madame de Saint-Euverte arriva."
+        let result = BookSnapPipeline.fixOCRConfusions(input)
+        XCTAssertEqual(result, input)
     }
 
     // MARK: - Helpers
