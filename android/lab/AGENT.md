@@ -40,7 +40,7 @@ interface Pipeline {
 ## Pre-installed Libraries
 
 - **ML Kit Text Recognition** — `com.google.mlkit:text-recognition` (Latin)
-- **OpenCV** — `org.opencv:opencv:4.9.0` (requires `OpenCVLoader.initLocal()` in `initialize()`)
+- **OpenCV** — `org.opencv:opencv:4.11.0` (requires `OpenCVLoader.initLocal()` in `initialize()`; do NOT bump — 4.12+ crashes with SIGILL on the eval emulator, see test-harness/app/build.gradle.kts)
 - **Tesseract** — `com.rmtheis:tess-two:9.1.0`
 - **GPUImage** — `jp.co.cyberagent.android:gpuimage:2.1.0`
 - **ML Kit Language ID** — `com.google.mlkit:language-id:17.0.6`

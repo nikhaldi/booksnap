@@ -18,7 +18,7 @@ import org.robolectric.RuntimeEnvironment
  * JVM unit tests for BookSnapPipeline using Robolectric + mock OCR engine.
  *
  * These tests verify the pipeline contract and core logic without needing
- * an Android emulator or real ML Kit. OpenCV runs via the openpnp desktop jar.
+ * an Android emulator or real ML Kit. OpenCV runs via the bytedeco desktop natives.
  */
 @RunWith(RobolectricTestRunner::class)
 class BookSnapPipelineTest {
@@ -28,7 +28,8 @@ class BookSnapPipelineTest {
         fun initOpenCv() {
             // Must load before any OpenCV class is referenced
             try {
-                nu.pattern.OpenCV.loadLocally()
+                org.bytedeco.javacpp.Loader
+                    .load(org.bytedeco.opencv.opencv_java::class.java)
             } catch (e: Exception) {
                 System.err.println("OpenCV desktop load failed: ${e.message}")
             }

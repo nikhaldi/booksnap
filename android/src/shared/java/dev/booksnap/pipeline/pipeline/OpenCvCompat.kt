@@ -7,8 +7,9 @@ import org.opencv.core.Mat
  * Compatibility layer for OpenCV initialization and Bitmap↔Mat conversion.
  *
  * On Android, uses `org.opencv.android.OpenCVLoader` and `org.opencv.android.Utils`.
- * In JVM tests (Robolectric), falls back to `nu.pattern.OpenCV` for initialization
- * and manual pixel copying for Bitmap conversion.
+ * In JVM tests (Robolectric), falls back to the bytedeco desktop natives
+ * (`org.bytedeco:opencv-platform`) for initialization and manual pixel copying
+ * for Bitmap conversion.
  */
 object OpenCvCompat {
     private var initialized = false
@@ -36,11 +37,11 @@ object OpenCvCompat {
             initialized = true
             return
         }
-        // Fall back to desktop loader (openpnp jar for JVM tests)
+        // Fall back to desktop loader (bytedeco jar for JVM tests)
         try {
-            val clazz = Class.forName("nu.pattern.OpenCV")
-            val method = clazz.getMethod("loadLocally")
-            method.invoke(null)
+            val presetClass = Class.forName("org.bytedeco.opencv.opencv_java")
+            val loaderClass = Class.forName("org.bytedeco.javacpp.Loader")
+            loaderClass.getMethod("load", Class::class.java).invoke(null, presetClass)
             initialized = true
         } catch (e: Exception) {
             System.err.println("OpenCV init failed: ${e.message}")

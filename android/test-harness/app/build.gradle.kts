@@ -1,5 +1,8 @@
 plugins {
     id("com.android.application")
+    // Resolves bytedeco -platform artifacts to the current platform's natives only
+    // (override with -PjavacppPlatform=linux-x86_64,macosx-arm64,...)
+    id("org.bytedeco.gradle-javacpp-platform") version "1.5.10"
 }
 
 val hunspellLangsStr = findProperty("hunspell.langs") as? String ?: "en,en-GB,fr,de,it"
@@ -74,7 +77,14 @@ dependencies {
 
     // Image processing
     implementation("androidx.exifinterface:exifinterface:1.4.2")
-    implementation("org.opencv:opencv:4.9.0")
+    // Track the library's OpenCV version (android/build.gradle) as closely as
+    // possible, and keep the bytedeco testImplementation below on the same
+    // version (JVM tests load bytedeco's desktop natives for these bindings).
+    // Pinned to 4.11.0 for now: 4.12.0+ crashes with SIGILL (illegal SVE
+    // instruction in cv::remap) on Android emulators running on Apple Silicon,
+    // which is where the lab eval runs. Revisit when OpenCV fixes its ARM
+    // feature detection under the emulator's hypervisor.
+    implementation("org.opencv:opencv:4.11.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
     // Alternative OCR engine
@@ -92,7 +102,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("org.openpnp:opencv:4.9.0-0")
+    // Official org.opencv Java API + desktop natives for Robolectric tests.
+    // OpenCV version must match the org.opencv:opencv dependency above.
+    testImplementation("org.bytedeco:opencv-platform:4.11.0-1.5.12")
 
     // Instrumented tests (emulator)
     androidTestImplementation("androidx.test:runner:1.7.0")
