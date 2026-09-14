@@ -90,7 +90,7 @@ dependencies {
 
     // JVM unit tests (Robolectric)
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation("org.robolectric:robolectric:4.17")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("org.openpnp:opencv:4.9.0-0")
 
