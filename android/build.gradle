@@ -101,7 +101,7 @@ dependencies {
   implementation "androidx.exifinterface:exifinterface:1.3.7"
 
   // Image processing
-  implementation "org.opencv:opencv:4.13.0"
+  implementation "org.opencv:opencv:5.0.0.1"
 
   // Language detection
   implementation "com.google.mlkit:language-id:17.0.6"
