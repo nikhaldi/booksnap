@@ -74,7 +74,7 @@ dependencies {
 
     // Image processing
     implementation("androidx.exifinterface:exifinterface:1.4.2")
-    implementation("org.opencv:opencv:4.9.0")
+    implementation("org.opencv:opencv:5.1.0")
     implementation("jp.co.cyberagent.android:gpuimage:2.1.0")
 
     // Alternative OCR engine
